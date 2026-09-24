@@ -1,0 +1,55 @@
+# MyPilot product monorepo
+#
+# Tracked: app/, sidecar/, contract/, bff/
+# External clones (kept as separate git repos, not vendored here):
+#   router/       — one-api fork
+#   ../browser-use — upstream browser-use + our patch set
+
+# ── external checkouts ───────────────────────────────────────────────────────
+router/
+
+# ── secrets ──────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite3
+*.sqlite3-journal
+
+# ── build output ─────────────────────────────────────────────────────────────
+app/out/
+app/dist/
+app/.vite/
+app/.forge-stage/
+app/src/renderer/**/.vite/
+app/src/renderer/hub/dist/
+app/test-results/
+app/playwright-report/
+app/**/__pycache__/
+
+# ── dependencies & caches ────────────────────────────────────────────────────
+node_modules/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.vite/
+.cache/
+
+# ── local runtime state ──────────────────────────────────────────────────────
+# Chromium profiles and agent run state from local sidecar runs.
+sidecar/profiles/
+sidecar/sessions/
+sidecar/runs/
+bff/data/
+app/userData/
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime state — never commit. profiles/ holds real Chromium profile data
+# (cookies, extension cache, metrics) from local agent runs.
+profiles/
+sessions/
+runs/
+
+# Local config
+.env
+.env.*
+!.env.example
