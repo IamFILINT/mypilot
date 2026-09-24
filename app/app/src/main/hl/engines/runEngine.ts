@@ -15,6 +15,7 @@ import { engineLogger } from '../../logger';
 import { resolveAuth, loadOpenAIKey, loadClaudeSubscriptionType, loadBrowserCodeConfig, loadRouterConfig } from '../../identity/authStore';
 import { helpersPath, skillPath, skillMetaFromPath as resolveSkillMetaFromPath } from '../harness';
 import { get as getAdapter } from './registry';
+import { sanitizedChildEnv } from './childEnv';
 import { spawnCli } from './cliSpawn';
 import { registerResourceOwner, unregisterResourceOwner } from '../../resourceMonitor';
 import type {
@@ -86,6 +87,30 @@ export async function runEngine(opts: RunEngineOptions): Promise<void> {
   if (!adapter) {
     opts.onEvent({ type: 'error', message: `unknown_engine: ${opts.engineId}` });
     return;
+  }
+
+  // Metered engines are quota-gated here rather than only at session creation,
+  // so resume/rerun/follow-up paths cannot slip past the check. The gateway
+  // remains authoritative; this produces a clear, early message.
+  if (adapter.metered) {
+    try {
+      const { usageLedger } = await import('../../billing/usage');
+      const verdict = usageLedger().checkQuota();
+      engineLogger.info('engines.run.quota', {
+        engineId: adapter.id,
+        sessionId: opts.sessionId,
+        allowed: verdict.allowed,
+        reason: verdict.reason ?? null,
+        tokensUsed: verdict.tokensUsed,
+        costUsedUsd: verdict.costUsedUsd,
+      });
+      if (!verdict.allowed) {
+        opts.onEvent({ type: 'error', message: verdict.message });
+        return;
+      }
+    } catch (err) {
+      engineLogger.warn('engines.run.quota.failed', { error: (err as Error).message });
+    }
   }
 
   // 1. Resolve CDP target for the session's browser view.
@@ -244,7 +269,7 @@ export async function runEngine(opts: RunEngineOptions): Promise<void> {
   };
   const wrappedPrompt = adapter.wrapPrompt(spawnCtx);
   const args = adapter.buildSpawnArgs(spawnCtx, wrappedPrompt);
-  const env = adapter.buildEnv(spawnCtx, { ...process.env });
+  const env = adapter.buildEnv(spawnCtx, sanitizedChildEnv());
   const binary = adapter.resolveBinary?.() ?? adapter.binaryName;
 
   engineLogger.info('engines.run.spawn', {

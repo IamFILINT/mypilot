@@ -5,8 +5,10 @@
  * preference doesn't need encryption, and we want it readable by renderers
  * via IPC without re-prompting the OS for Keychain access).
  *
- * Consent defaults to *enabled* (opt-out). Users can disable telemetry at any
- * time from onboarding or Settings, and DO_NOT_TRACK=1 hard-disables it.
+ * Consent defaults to *disabled* (opt-in). Nothing leaves the device until the
+ * user actively opts in, so first-launch and onboarding events are not sent
+ * before a choice is made. Users can change it at any time from onboarding or
+ * Settings, and DO_NOT_TRACK=1 hard-disables it regardless.
  */
 
 import fs from 'node:fs';
@@ -27,7 +29,7 @@ export interface ConsentState {
 }
 
 const DEFAULT_STATE: ConsentState = {
-  telemetry: true,
+  telemetry: false,
   telemetryUpdatedAt: null,
   version: CURRENT_VERSION,
 };

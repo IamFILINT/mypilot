@@ -150,6 +150,12 @@ const config: ForgeConfig = {
       execFileSync(process.execPath, [path.resolve(__dirname, 'scripts/stage-sidecar-resources.mjs')], {
         stdio: 'inherit',
       });
+      // Generate app-update.yml from src/shared/releaseChannel.ts so the
+      // packaged update feed can never drift onto another repo. Fails the build
+      // while RELEASE_OWNER is still the placeholder.
+      execFileSync(process.execPath, [path.resolve(__dirname, 'scripts/write-app-update.mjs')], {
+        stdio: 'inherit',
+      });
       // Platform-specific (linux-x64 today, plus the mac/win release jobs), so
       // it is built in CI rather than committed. Skippable for a quick local
       // package; the app then falls back to system Python at runtime.

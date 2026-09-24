@@ -33,9 +33,12 @@ const MAX_HISTOGRAM_SAMPLES = 10_000;
 // Public PostHog project key — safe to commit. It's a write-only token that
 // can only ingest events; it cannot read analytics. See PostHog docs:
 // https://posthog.com/questions/is-it-ok-to-expose-the-posthog-project-api-key-to-the-public
-// Forks can override by changing these constants and rebuilding.
-const POSTHOG_PUBLIC_KEY = 'phc_F8JMNjW1i2KbGUTaW1unnDdLSPCoyc52SGRU0JecaUh';
-const POSTHOG_HOST = 'https://eu.i.posthog.com';
+//
+// Overridable by environment so operators can point at a self-hosted instance
+// (the default EU endpoint is not reachable from every market we serve) and so
+// automated test runs can disable telemetry entirely.
+const POSTHOG_PUBLIC_KEY = process.env.POSTHOG_API_KEY || 'phc_F8JMNjW1i2KbGUTaW1unnDdLSPCoyc52SGRU0JecaUh';
+const POSTHOG_HOST = process.env.POSTHOG_HOST || 'https://eu.i.posthog.com';
 
 // ---------------------------------------------------------------------------
 // Metric thresholds (plan §8.4)

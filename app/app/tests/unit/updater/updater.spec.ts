@@ -12,6 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { releaseFeedUrl } from '../../../src/shared/releaseChannel';
 
 // ---------------------------------------------------------------------------
 // electron-updater mock — captured so individual tests can inspect it.
@@ -248,14 +249,14 @@ describe('updater (Issue #202)', () => {
       process.env.NODE_ENV = 'production';
     });
 
-    it('configures the GitHub release-asset feed for browser-use/desktop', async () => {
+    it('configures the GitHub release-asset feed for the MyPilot release repo', async () => {
       const { updater } = await loadUpdaterFresh(true);
 
       await updater.initUpdater();
 
       expect(fakeAutoUpdater.feedURL).toEqual({
         provider: 'generic',
-        url: 'https://github.com/browser-use/desktop/releases/latest/download',
+        url: releaseFeedUrl(),
       });
 
       updater.stopUpdater();
@@ -267,7 +268,7 @@ describe('updater (Issue #202)', () => {
       await updater.initUpdater();
 
       expect(fakeWindowsAutoUpdater.feedURL).toEqual({
-        url: 'https://github.com/browser-use/desktop/releases/latest/download',
+        url: releaseFeedUrl(),
       });
       expect(fakeWindowsAutoUpdater.checkCount).toBe(1);
       expect(fakeWindowsAutoUpdater.hasListener('update-downloaded')).toBe(true);
@@ -292,7 +293,7 @@ describe('updater (Issue #202)', () => {
 
       expect(fakeAutoUpdater.feedURL).toEqual({
         provider: 'generic',
-        url: 'https://github.com/browser-use/desktop/releases/latest/download',
+        url: releaseFeedUrl(),
       });
       expect(fakeAutoUpdater.checkCount).toBe(1);
 
@@ -398,7 +399,7 @@ describe('updater (Issue #202)', () => {
       expect(result.action).toBe('started-update-check');
       expect(fakeAutoUpdater.feedURL).toEqual({
         provider: 'generic',
-        url: 'https://github.com/browser-use/desktop/releases/latest/download',
+        url: releaseFeedUrl(),
       });
       expect(fakeAutoUpdater.checkCount).toBeGreaterThanOrEqual(2);
 

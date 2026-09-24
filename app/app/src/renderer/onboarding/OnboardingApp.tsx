@@ -150,7 +150,7 @@ function PreferencesStep({
 }) {
   const [requested, setRequested] = useState(false);
   const [supported, setSupported] = useState(true);
-  const [telemetryOptIn, setTelemetryOptIn] = useState(true);
+  const [telemetryOptIn, setTelemetryOptIn] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleEnable = useCallback(async () => {

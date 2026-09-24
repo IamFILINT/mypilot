@@ -290,14 +290,14 @@ export class WhatsAppAdapter implements ChannelAdapter {
       }
 
       // Self-chat doubles as a notes app — only spawn a session when the user
-      // explicitly mentions @BU. Strip the token from the prompt so the agent
+      // explicitly mentions @MyPilot (legacy: @BU). Strip the token from the prompt so the agent
       // sees a clean instruction.
-      const triggerMatch = text.match(/(^|\s)@BU\b/i);
+      const triggerMatch = text.match(/(^|\s)@(MyPilot|BU)\b/i);
       if (!triggerMatch) {
         mainLogger.info('whatsapp.msg.skipNoTrigger', { remoteJid: msg.key.remoteJid });
         continue;
       }
-      const cleanedText = text.replace(/(^|\s)@BU\b\s*/i, '$1').trim();
+      const cleanedText = text.replace(/(^|\s)@(MyPilot|BU)\b\s*/i, '$1').trim();
       if (!cleanedText) {
         mainLogger.info('whatsapp.msg.skipEmptyAfterTrigger', { remoteJid: msg.key.remoteJid });
         continue;

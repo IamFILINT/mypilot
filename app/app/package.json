@@ -6,7 +6,7 @@
   "homepage": "https://mypilot.ir",
   "repository": {
     "type": "git",
-    "url": "https://github.com/browser-use/desktop.git"
+    "url": "https://github.com/IamFIlINT/mypilot.git"
   },
   "engines": {
     "node": "20.x || 22.x"

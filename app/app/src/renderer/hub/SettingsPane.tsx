@@ -510,7 +510,11 @@ function PrivacySection(): React.ReactElement {
       <div className="settings-pane__row">
         <div>
           <div className="settings-pane__label">Allow telemetry to help us make this app better</div>
-          <div className="settings-pane__sublabel">Anonymous only — app version, OS, feature usage, and crash reports.</div>
+          <div className="settings-pane__sublabel">
+            Off by default. Sends app version, OS, and feature-usage events to PostHog (EU region)
+            under a random install ID. No prompts, page contents, or credentials. Also honors
+            DO_NOT_TRACK=1.
+          </div>
         </div>
         <button
           className="settings-pane__toggle"

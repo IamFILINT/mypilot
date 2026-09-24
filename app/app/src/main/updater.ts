@@ -35,6 +35,7 @@ import { EventEmitter } from 'node:events';
 import { app, autoUpdater as electronAutoUpdater, BrowserWindow, dialog } from 'electron';
 import type { MessageBoxOptions, MessageBoxReturnValue } from 'electron';
 import type { AppUpdater } from 'electron-updater';
+import { latestReleaseApiUrl, releaseFeedUrl } from '../shared/releaseChannel';
 import { mainLogger } from './logger';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
@@ -43,8 +44,10 @@ const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 // /releases/latest/download URL makes electron-updater fetch latest-mac.yml or
 // latest-linux.yml directly from the published release assets and avoids
 // depending on electron-builder's GitHub provider metadata generation.
-const UPDATE_FEED_URL = 'https://github.com/browser-use/desktop/releases/latest/download';
-const LATEST_RELEASE_API_URL = 'https://api.github.com/repos/browser-use/desktop/releases/latest';
+// The slug lives in shared/releaseChannel.ts so the feed, the packaged
+// app-update.yml, and the README can never drift onto another repo.
+const UPDATE_FEED_URL = releaseFeedUrl();
+const LATEST_RELEASE_API_URL = latestReleaseApiUrl();
 
 let updateCheckTimer: ReturnType<typeof setInterval> | null = null;
 let initialized = false;

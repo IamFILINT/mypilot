@@ -546,16 +546,38 @@ async function handleRouterGetStatus(): Promise<{
   return { ...router, installed };
 }
 
+/**
+ * Validate a router base URL.
+ *
+ * The router token is a bearer credential, so plaintext HTTP would expose it on
+ * the wire. http is allowed only for loopback, which is the local dev gateway.
+ * Credentials embedded in the URL are rejected outright.
+ */
+function assertRouterUrl(raw: string): string {
+  const url = raw.trim().replace(/\/+$/, '');
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('Router URL is not a valid URL');
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error('Router URL must not embed credentials');
+  }
+  if (parsed.protocol === 'https:') return url;
+  const host = parsed.hostname.replace(/^\[|\]$/g, '');
+  const loopback = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  if (parsed.protocol === 'http:' && loopback) return url;
+  throw new Error('Router URL must use https (http is allowed only for localhost)');
+}
+
 async function handleRouterSave(
   _e: Electron.IpcMainInvokeEvent,
   payload: { url: string; token: string },
 ): Promise<void> {
-  const rawUrl = assertString(payload?.url ?? '', 'url', 500);
   const token = assertString(payload?.token ?? '', 'token', 500).trim();
   if (!token) throw new Error('Router token is required');
-  let url = rawUrl.trim().replace(/\/+$/, '');
-  if (!url) throw new Error('Router base URL is required');
-  if (!url.startsWith('http://') && !url.startsWith('https://')) throw new Error('Router URL must start with http:// or https://');
+  const url = assertRouterUrl(assertString(payload?.url ?? '', 'url', 500));
   const { getAdapter } = await import('../hl/engines');
   const installed = await getAdapter('browser-use-agent')?.probeInstalled();
   if (!installed?.installed) throw new Error(installed?.error ?? 'Install the MyPilot Agent engine before adding a router token');
@@ -600,17 +622,39 @@ async function handleRouterTest(
   _e: Electron.IpcMainInvokeEvent,
   payload: { url?: string; token?: string },
 ): Promise<{ success: boolean; error?: string }> {
-  let url = assertString(payload?.url ?? '', 'url', 500).trim().replace(/\/+$/, '');
-  let token = assertString(payload?.token ?? '', 'token', 500).trim();
-  if (!token || !url) {
+  const suppliedUrl = assertString(payload?.url ?? '', 'url', 500).trim();
+  const suppliedToken = assertString(payload?.token ?? '', 'token', 500).trim();
+
+  // A caller-supplied URL is only ever paired with a caller-supplied token.
+  // Filling in the saved token here would let a compromised renderer send the
+  // user's router credential to an arbitrary host.
+  let url: string;
+  let token: string;
+  if (suppliedUrl || suppliedToken) {
+    if (!suppliedUrl || !suppliedToken) {
+      return {
+        success: false,
+        error: 'Provide both the router URL and token to test a new configuration',
+      };
+    }
+    url = suppliedUrl;
+    token = suppliedToken;
+  } else {
     const existing = await loadRouterConfig();
-    if (!token && existing) token = existing.token;
-    if (!url && existing) url = existing.url;
+    if (!existing) return { success: false, error: 'No router token provided or saved' };
+    url = existing.url;
+    token = existing.token;
   }
-  if (!token) return { success: false, error: 'No router token provided or saved' };
-  if (!url) return { success: false, error: 'No router URL provided or saved' };
-  mainLogger.info('apiKeyIpc.router.test', { url, tokenLength: token.length });
-  const result = await testRouterToken(url, token);
+
+  let safeUrl: string;
+  try {
+    safeUrl = assertRouterUrl(url);
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+
+  mainLogger.info('apiKeyIpc.router.test', { url: safeUrl, tokenLength: token.length });
+  const result = await testRouterToken(safeUrl, token);
   mainLogger.info('apiKeyIpc.router.test.result', { success: result.success, error: result.error });
   return result;
 }

@@ -1382,9 +1382,9 @@ export function ConnectionsPane({
             </div>
             <span className="conn-card__subtitle">
               {waStatus === 'connected' && waIdentity
-                ? `Connected as +${waIdentity.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, '$1 ($2) $3-$4')} — text yourself with @BU to start a session (e.g. "@BU find me a flight to NYC"). Messages without @BU are ignored, so the chat still works as a notes app.`
+                ? `Connected as +${waIdentity.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, '$1 ($2) $3-$4')} — text yourself with @MyPilot to start a session (e.g. "@MyPilot find me a flight to NYC"). Messages without @MyPilot are ignored, so the chat still works as a notes app.`
                 : waStatus === 'disconnected'
-                ? 'Connect WhatsApp so you can text yourself @BU to launch sessions and get agent notifications back in the same chat.'
+                ? 'Connect WhatsApp so you can text yourself @MyPilot to launch sessions and get agent notifications back in the same chat.'
                 : statusText}
             </span>
           </div>
@@ -1424,7 +1424,7 @@ export function ConnectionsPane({
               <div className="conn-card__qr-loading">Generating QR...</div>
             )}
             <p className="conn-card__qr-hint">
-              Open WhatsApp on your phone, go to Linked Devices, and scan this code. After linking, text yourself with @BU followed by a task (e.g. "@BU summarize my Linear inbox") to start a session — plain notes without @BU are ignored.
+              Open WhatsApp on your phone, go to Linked Devices, and scan this code. After linking, text yourself with @MyPilot followed by a task (e.g. "@MyPilot summarize my Linear inbox") to start a session — plain notes without @MyPilot are ignored.
             </p>
           </div>
         )}
