@@ -1,6 +1,12 @@
 MIT License
 
-Copyright (c) 2026 MyPilot
+Copyright (c) 2024 Gregor Zunic (original browser-use/desktop)
+Copyright (c) 2026 MyPilot (modifications and rebranding)
+
+This project is a derivative of browser-use/desktop
+(https://github.com/browser-use/desktop), distributed under the MIT License.
+The original copyright notice and permission terms are retained above and
+below in accordance with that license.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
