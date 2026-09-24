@@ -298,7 +298,7 @@ function addOsUsage(
     engineId: owner.engineId ?? info?.engine ?? undefined,
     cpuPercent: round1(row.cpuPercent),
     rssMb: kbToMb(row.rssKb),
-    command: truncate(row.command, COMMAND_MAX_CHARS),
+    command: summarizeCommand(row.command, COMMAND_MAX_CHARS),
   });
 }
 
@@ -426,6 +426,23 @@ function round1(value: number): number {
 
 function sum<T>(items: T[], fn: (item: T) => number): number {
   return items.reduce((acc, item) => acc + fn(item), 0);
+}
+
+/**
+ * Reduce a process command line to its executable plus flags.
+ *
+ * Claude receives the full task prompt on argv, so the raw command would write
+ * user content (and anything quoted inside it) to the resource log. Keeping only
+ * the leading switches preserves the diagnostic value.
+ */
+function summarizeCommand(value: string, maxChars: number): string {
+  const trimmed = value.trim();
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '';
+  const head = parts[0];
+  const flags = parts.slice(1).filter((part) => part.startsWith('-'));
+  const summary = [head, ...flags].join(' ');
+  return truncate(summary, maxChars);
 }
 
 function truncate(value: string, maxChars: number): string {

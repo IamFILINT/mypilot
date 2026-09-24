@@ -14,6 +14,7 @@ import NodeCache from 'node-cache';
 import QRCode from 'qrcode';
 import { app } from 'electron';
 import { mainLogger } from '../logger';
+import { fingerprint } from '../logRedaction';
 import type { ChannelAdapter, ChannelStatus, InboundMessage } from './types';
 
 const AUTH_DIR = path.join(app.getPath('userData'), 'whatsapp-auth');
@@ -240,12 +241,14 @@ export class WhatsAppAdapter implements ChannelAdapter {
     if (type === 'append') return;
 
     for (const msg of messages) {
+      // JIDs are phone numbers: log a stable fingerprint so a conversation can
+      // be correlated during debugging without writing numbers to disk.
       mainLogger.info('whatsapp.msg.received', {
-        remoteJid: msg.key.remoteJid,
+        remoteJid: fingerprint(String(msg.key.remoteJid ?? '')),
         fromMe: msg.key.fromMe,
-        participant: msg.key.participant,
-        selfLid: this.selfLid,
-        ownJid: this.sock?.user?.id,
+        participant: msg.key.participant ? fingerprint(String(msg.key.participant)) : null,
+        selfLid: this.selfLid ? fingerprint(this.selfLid) : null,
+        ownJid: this.sock?.user?.id ? fingerprint(this.sock.user.id) : null,
       });
 
       if (msg.key.remoteJid === 'status@broadcast') continue;

@@ -283,7 +283,10 @@ export async function runEngine(opts: RunEngineOptions): Promise<void> {
     providerId,
     model,
     authSource: savedApiKey ? 'savedApiKey' : 'cliManaged',
-    args: args.map((a) => (a.length > 120 ? `${a.slice(0, 100)}…<${a.length}ch>` : a)),
+    // Args can contain the full task prompt (Claude takes it on argv), so log
+    // shape rather than content: flag switches plus an argument count.
+    argCount: args.length,
+    argFlags: args.filter((a) => a.startsWith('-')).slice(0, 20),
     envAuthFlags: {
       ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ? `set(${env.ANTHROPIC_API_KEY.length}ch)` : 'unset',
       ANTHROPIC_AUTH_TOKEN: env.ANTHROPIC_AUTH_TOKEN ? 'set' : 'unset',
@@ -727,6 +730,8 @@ export async function runEngine(opts: RunEngineOptions): Promise<void> {
         engineId: adapter.id,
         code,
         signal: sig,
+        // Tails are redacted centrally, but only the last lines are kept so a
+        // long-running engine cannot push megabytes of page content to disk.
         stderrTail: stderrBuf.slice(-800),
         stdoutTail: stdoutBuf.slice(-800),
         stdoutBytes: stdoutBuf.length,

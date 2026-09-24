@@ -18,6 +18,7 @@
 import { shell } from 'electron';
 import * as pty from 'node-pty';
 import { mainLogger } from '../logger';
+import { sanitizeUrl } from '../logRedaction';
 import { resolveCliLaunch } from '../hl/engines/pathEnrich';
 
 const LOGIN_BIN = 'codex';
@@ -141,14 +142,17 @@ export function runCodexDeviceLogin(opts: CodexLoginOptions = {}): Promise<Codex
         const m = clean.match(URL_RE);
         if (m) {
           foundUrl = m[0];
-          mainLogger.info('codexLogin.urlFound', { url: foundUrl });
+          // Never log the auth URL verbatim: it carries the device code and
+          // state in its query string.
+          mainLogger.info('codexLogin.urlFound', { url: sanitizeUrl(foundUrl) ?? '[url]' });
         }
       }
       if (!foundCode) {
         const m = clean.match(CODE_RE);
         if (m) {
           foundCode = m[1];
-          mainLogger.info('codexLogin.codeFound', { code: foundCode });
+          // The one-time code is a live credential; record only that one arrived.
+          mainLogger.info('codexLogin.codeFound', { received: true });
         }
       }
 

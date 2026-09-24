@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { redactString, redactValue } from './logRedaction';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -55,10 +56,13 @@ export function sanitizeLogExtra(extra?: Record<string, unknown>): Record<string
   if (!extra) return undefined;
   const safe: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(extra)) {
+    // Everything written to disk goes through redaction first, so no call site
+    // can accidentally persist a token, a one-time code, or a signed URL.
+    const redacted = redactValue(key, value);
     if (RESERVED_LOG_FIELDS.has(key)) {
-      safe[`extra_${key}`] = value;
+      safe[`extra_${key}`] = redacted;
     } else {
-      safe[key] = value;
+      safe[key] = redacted;
     }
   }
   return safe;
@@ -186,23 +190,27 @@ export class ChannelLogger {
       return;
     }
 
+    const safeExtra = sanitizeLogExtra(extra);
     const entry: LogEntry = {
       ts: new Date().toISOString(),
       level,
       channel: this.channel,
-      msg,
-      ...sanitizeLogExtra(extra),
+      // Error messages routinely embed the offending value (a URL with a code,
+      // a rejected token), so the message is redacted too.
+      msg: redactString(msg),
+      ...safeExtra,
     };
 
     const line = JSON.stringify(entry);
     this.writer.write(line);
 
-    // Mirror to console for visibility during development
+    // Mirror to console for visibility during development. Uses the redacted
+    // payload so credentials never reach a terminal scrollback either.
     const consoleFn = level === 'error' ? console.error
       : level === 'warn' ? console.warn
       : level === 'debug' ? console.debug
       : console.log;
-    consoleFn(`[${level.toUpperCase()}][${this.channel}] ${msg}`, extra ?? '');
+    consoleFn(`[${level.toUpperCase()}][${this.channel}] ${redactString(msg)}`, safeExtra ?? '');
   }
 }
 

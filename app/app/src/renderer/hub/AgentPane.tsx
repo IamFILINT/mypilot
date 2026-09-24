@@ -567,7 +567,7 @@ function FollowUpInput({ sessionId, onUserInput, autoFocus }: { sessionId: strin
     while ((m = tokenRe.exec(trimmed)) !== null) presentIdx.add(Number(m[1]));
     const filtered = attachments.filter((a) => presentIdx.has(a.idx));
     if (!trimmed && filtered.length === 0) return;
-    console.log('[FollowUpInput] sending follow-up', { id: sessionId, prompt: trimmed, attachmentCount: filtered.length });
+    console.log('[FollowUpInput] sending follow-up', { id: sessionId, promptLength: trimmed.length, attachmentCount: filtered.length });
     onUserInput(trimmed, filtered.length > 0 ? filtered : undefined);
     setValue('');
     setAttachments([]);

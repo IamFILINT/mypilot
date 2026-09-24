@@ -353,7 +353,7 @@ export function HubApp(): React.ReactElement {
         id, prompt, status: 'running', createdAt: now,
         output: [{ type: 'thinking', text: `Analyzing the task: "${prompt}". Let me break this down and determine the best approach.` }],
       };
-      console.log('[HubApp] createSession (mock)', { id, prompt });
+      console.log('[HubApp] createSession (mock)', { id, promptLength: prompt.length });
       pendingFocusIdRef.current = id;
       enterChat(id);
       setSessions((prev) => [...prev, newSession]);
@@ -381,7 +381,7 @@ export function HubApp(): React.ReactElement {
     if (!api) { console.error('[HubApp] electronAPI not available'); return; }
 
     try {
-      console.log('[HubApp] createSession (live)', { prompt, attachmentCount: attachments.length });
+      console.log('[HubApp] createSession (live)', { promptLength: prompt.length, attachmentCount: attachments.length });
       const id = await api.sessions.create(
         attachments.length > 0 || engine
           ? { prompt, attachments, engine }
@@ -407,7 +407,7 @@ export function HubApp(): React.ReactElement {
       const api = window.electronAPI;
       if (!api) return;
       try {
-        console.log('[HubApp] followUp', { sessionId, prompt, attachmentCount: attachments?.length ?? 0 });
+        console.log('[HubApp] followUp', { sessionId, promptLength: prompt.length, attachmentCount: attachments?.length ?? 0 });
         const result = await api.sessions.resume(sessionId, prompt, attachments);
         if (result?.error) {
           console.warn('[HubApp] followUp error', { sessionId, error: result.error });
