@@ -21,6 +21,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xz-utils \
   && rm -rf /var/lib/apt/lists/*
 
+# uv provisions the relocatable CPython that ships as resources/python-runtime
+# (scripts/build-python-runtime.mjs). The apt python3 above is not used for that
+# payload; it satisfies build tooling only.
+COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /usr/local/bin/uv
+RUN uv --version
+
 ARG APPIMAGETOOL_URL=https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
 RUN curl -fsSL "$APPIMAGETOOL_URL" -o /usr/local/bin/appimagetool \
   && chmod +x /usr/local/bin/appimagetool
@@ -36,6 +42,14 @@ RUN yarn install --frozen-lockfile
 
 WORKDIR /workspace
 COPY . .
+
+# The build context is the product monorepo root, so the packaged sources land
+# at /workspace/sidecar and /workspace/browser-use. runtime staging resolves
+# them from the app dir by default, which assumes the two-levels-up layout of a
+# local checkout; inside the container that heuristic misses, so pin them.
+ENV MYPILOT_SIDECAR_SRC=/workspace/sidecar \
+    MYPILOT_BROWSER_USE_SRC=/workspace/browser-use \
+    MYPILOT_STAGE_DIR=/workspace/app/.forge-stage
 
 WORKDIR /workspace/app
 RUN yarn run make -- --platform=linux --arch=x64

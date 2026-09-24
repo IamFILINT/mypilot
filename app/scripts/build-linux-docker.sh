@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The Dockerfile copies `app/...` paths, so the build context is the product
+# monorepo root — not the app dir. That also makes /workspace/sidecar and
+# /workspace/browser-use available to the packaging step.
+BUILD_CONTEXT="${BUILD_CONTEXT:-$(cd "$APP_DIR/.." && pwd)}"
 IMAGE_TAG="${IMAGE_TAG:-desktop-app-linux-package:local}"
 DOCKER_PLATFORM="${DOCKER_PLATFORM:-linux/amd64}"
 
@@ -11,11 +15,26 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
+# Preflight: the MyPilot Agent payload is staged from these trees at package
+# time. Fail here with a clear message instead of midway through the build.
+if [ ! -f "$BUILD_CONTEXT/sidecar/pyproject.toml" ]; then
+  echo "Missing $BUILD_CONTEXT/sidecar/pyproject.toml"
+  echo "The build context must be the product monorepo root (the parent of the app dir)."
+  echo "Set BUILD_CONTEXT=<path> to override."
+  exit 1
+fi
+if [ ! -f "$BUILD_CONTEXT/browser-use/pyproject.toml" ]; then
+  echo "Missing $BUILD_CONTEXT/browser-use/pyproject.toml"
+  echo "The browser-use fork must be present in the build context."
+  echo "Clone it to <monorepo>/browser-use (gitignored) or set BUILD_CONTEXT to a root that contains it."
+  exit 1
+fi
+
 docker build \
   --platform "$DOCKER_PLATFORM" \
-  -f "$ROOT_DIR/docker/linux.Dockerfile" \
+  -f "$APP_DIR/docker/linux.Dockerfile" \
   -t "$IMAGE_TAG" \
-  "$ROOT_DIR"
+  "$BUILD_CONTEXT"
 
 container_id="$(docker create "$IMAGE_TAG")"
 tmp_dir="$(mktemp -d)"
@@ -25,13 +44,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$ROOT_DIR/app/out/make"
+mkdir -p "$APP_DIR/out/make"
 rm -rf \
-  "$ROOT_DIR/app/out/make/deb" \
-  "$ROOT_DIR/app/out/make/rpm" \
-  "$ROOT_DIR/app/out/make/appimage" \
-  "$ROOT_DIR/app/out/make/latest-linux.yml"
+  "$APP_DIR/out/make/deb" \
+  "$APP_DIR/out/make/rpm" \
+  "$APP_DIR/out/make/appimage" \
+  "$APP_DIR/out/make/latest-linux.yml"
 docker cp "$container_id:/workspace/app/out/make" "$tmp_dir/make"
-cp -R "$tmp_dir/make/." "$ROOT_DIR/app/out/make/"
+cp -R "$tmp_dir/make/." "$APP_DIR/out/make/"
 
-node "$ROOT_DIR/scripts/verify-linux-artifacts.mjs"
+node "$APP_DIR/scripts/verify-linux-artifacts.mjs"
