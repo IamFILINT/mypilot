@@ -1,6 +1,6 @@
 # MyPilot product monorepo
 #
-# Tracked: app/, sidecar/, contract/, bff/
+# Tracked: app/, sidecar/
 # External clones (kept as separate git repos, not vendored here):
 #   router/       — one-api fork
 #   ../browser-use — upstream browser-use + our patch set
@@ -46,7 +46,6 @@ __pycache__/
 sidecar/profiles/
 sidecar/sessions/
 sidecar/runs/
-bff/data/
 app/userData/
 
 # ── OS ───────────────────────────────────────────────────────────────────────
