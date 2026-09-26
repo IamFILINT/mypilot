@@ -67,16 +67,15 @@ Requires Node 20 or 22, and `yarn`.
 
 ```bash
 git clone https://github.com/IamFILINT/mypilot.git
-cd mypilot/app
+git clone https://github.com/browser-use/browser-use
+
+cd mypilot/app/app
 yarn install
-
-# The agent engine builds against a checkout of the browser-use library.
-git clone https://github.com/browser-use/browser-use ../browser-use
-
 yarn start
 ```
 
-If you keep the `browser-use` checkout somewhere else, point the build at it:
+The `browser-use` checkout has to sit **beside** the `mypilot` directory, as
+above. If you keep it anywhere else, point the build at it:
 
 ```bash
 export MYPILOT_BROWSER_USE_SRC=/path/to/browser-use
