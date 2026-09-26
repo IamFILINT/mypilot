@@ -156,6 +156,44 @@ const browserUseAgentAdapter: EngineAdapter = {
       return { events: [] };
     }
 
+    // Self-healing: the sidecar relaunches a dead browser and re-plans. Surface
+    // it rather than letting the run look hung.
+    if (type === 'recovering') {
+      const reason = typeof e.reason === 'string' ? e.reason : 'browser_unavailable';
+      const attempt = typeof e.attempt === 'number' ? e.attempt : 1;
+      events.push({
+        type: 'notify',
+        level: 'info',
+        message: `Browser stopped responding — recovering (attempt ${attempt}, ${reason.replace(/_/g, ' ')}).`,
+      });
+      return { events };
+    }
+
+    if (type === 'recovered') {
+      const reason = typeof e.reason === 'string' ? e.reason : '';
+      events.push({
+        type: 'notify',
+        level: 'info',
+        message: reason === 'budget_exhausted'
+          ? 'Browser could not be recovered; stopping after the retry budget.'
+          : 'Browser recovered.',
+      });
+      return { events };
+    }
+
+    // Generic notices from the sidecar (skills distilled, long-task notices).
+    if (type === 'notify') {
+      const message = typeof e.message === 'string' ? e.message : '';
+      if (message) {
+        events.push({
+          type: 'notify',
+          level: e.level === 'blocking' ? 'blocking' : 'info',
+          message: message.slice(0, MAX_PREVIEW),
+        });
+      }
+      return { events };
+    }
+
     if (type === 'step') {
       ctx.iter++;
       const nextGoal = typeof e.next_goal === 'string' ? e.next_goal : '';

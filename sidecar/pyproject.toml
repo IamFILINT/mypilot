@@ -19,3 +19,30 @@ package = true
 
 [tool.uv.sources]
 browser-use = { path = "../../browser-use", editable = true }
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.7",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# SIM105 is off: the sidecar deliberately uses `except: pass` for best-effort
+# teardown and optional-availability probes, which reads better than
+# contextlib.suppress at those call sites.
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "RUF"]
+ignore = ["SIM105"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test helpers unpack scaffolding they do not always consume.
+"tests/*" = ["RUF059"]

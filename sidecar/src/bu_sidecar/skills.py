@@ -10,10 +10,8 @@ from __future__ import annotations
 
 import re
 import shutil
-import sys
 import time
 from pathlib import Path
-from typing import Any
 
 
 def seed_skills(profile_dir: Path, seed_dir: Path | None) -> Path:
@@ -119,7 +117,8 @@ def distill_skill(
     out_dir = session_dir / 'skills' / 'distilled'
     out_dir.mkdir(parents=True, exist_ok=True)
     host = _host_tokens(url or '')
-    key_tokens = [t for t in host] + [t for t in re.split(r'[^a-z0-9]+', task.lower())[:4] if len(t) >= 3]
+    task_tokens = [t for t in re.split(r'[^a-z0-9]+', task.lower())[:4] if len(t) >= 3]
+    key_tokens = [t for t in host] + task_tokens
     slug = '-'.join(dict.fromkeys(key_tokens))[:80] or 'run'
     dest = out_dir / f'{slug}.md'
     actions = ', '.join(action_names[:12]) if action_names else ''

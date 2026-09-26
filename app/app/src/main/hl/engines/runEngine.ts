@@ -90,22 +90,27 @@ export async function runEngine(opts: RunEngineOptions): Promise<void> {
   }
 
   // Metered engines are quota-gated here rather than only at session creation,
-  // so resume/rerun/follow-up paths cannot slip past the check. The gateway
-  // remains authoritative; this produces a clear, early message.
+  // so resume/rerun/follow-up paths cannot slip past the check. The server
+  // verdict is authoritative; the local ledger is an offline fallback only.
   if (adapter.metered) {
     try {
-      const { usageLedger } = await import('../../billing/usage');
-      const verdict = usageLedger().checkQuota();
+      const { checkQuota } = await import('../../account/quotaGate');
+      const decision = await checkQuota();
       engineLogger.info('engines.run.quota', {
         engineId: adapter.id,
         sessionId: opts.sessionId,
-        allowed: verdict.allowed,
-        reason: verdict.reason ?? null,
-        tokensUsed: verdict.tokensUsed,
-        costUsedUsd: verdict.costUsedUsd,
+        source: decision.source,
+        allowed: decision.allowed,
+        reason: decision.verdict.reason ?? null,
+        planId: decision.verdict.plan.id,
+        tokensUsed: decision.verdict.tokensUsed,
+        costUsedUsd: decision.verdict.costUsedUsd,
       });
-      if (!verdict.allowed) {
-        opts.onEvent({ type: 'error', message: verdict.message });
+      if (!decision.allowed) {
+        opts.onEvent({
+          type: 'error',
+          message: decision.message ?? 'Monthly usage limit reached.',
+        });
         return;
       }
     } catch (err) {

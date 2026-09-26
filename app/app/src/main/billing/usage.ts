@@ -60,15 +60,25 @@ export interface LocalPlan {
   monthlyCostLimitUsd: number;
 }
 
-const DEFAULT_PLAN: LocalPlan = {
+/**
+ * Offline fallback plan.
+ *
+ * These numbers are NOT authoritative — the account API owns plan limits and
+ * entitlements (see src/main/account/quotaGate.ts). They exist only so an
+ * offline or signed-out user still gets a sane local stop instead of unlimited
+ * local spend, and so the UI has something to render. A user can edit them;
+ * that is acceptable precisely because the server and gateway still enforce the
+ * real limit.
+ */
+const FALLBACK_PLAN: LocalPlan = {
   id: 'free',
   monthlyTokenLimit: 2_000_000,
   monthlyCostLimitUsd: 10,
 };
 
-/** Local plan with env overrides (dev/self-host tuning until Phase 5). */
+/** Local fallback plan with env overrides (offline tuning / self-host). */
 export function getLocalPlan(env: NodeJS.ProcessEnv = process.env): LocalPlan {
-  const plan: LocalPlan = { ...DEFAULT_PLAN };
+  const plan: LocalPlan = { ...FALLBACK_PLAN };
   const tokens = Number(env.BU_MONTHLY_TOKEN_LIMIT);
   if (Number.isFinite(tokens) && tokens > 0) plan.monthlyTokenLimit = Math.floor(tokens);
   const cost = Number(env.BU_MONTHLY_COST_LIMIT_USD);
