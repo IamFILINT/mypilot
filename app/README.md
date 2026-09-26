@@ -1,56 +1,39 @@
-<img width="1456" height="484" alt="desktop-app-banner" src="https://github.com/user-attachments/assets/550ca16a-5a61-4ded-92f0-a30421870223" />
+# MyPilot desktop client
 
-# MyPilot App
-
-> Run a team of browser agents on your desktop.
-
-[![Download for macOS](https://img.shields.io/badge/Download_for_macOS-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/IamFIlINT/mypilot/releases/latest/download/MyPilot-arm64.dmg)
-[![Download for Windows](https://img.shields.io/badge/Download_for_Windows-0078D4?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4OCA4OCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMTIuNCAzNiA3LjV2MzQuOEgwem00MC4zLTUuNUw4OCAwdjQxLjhINDAuM3pNMCA0NS43aDM2djM0LjhMMCA3NS42em00MC4zLjVIODhWODhsLTQ3LjctNi43eiIvPjwvc3ZnPg%3D%3D&logoColor=white)](https://github.com/IamFIlINT/mypilot/releases/latest/download/MyPilot-Setup.exe)
-[![Download for Linux](https://img.shields.io/badge/Download_for_Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/IamFIlINT/mypilot/releases/latest/download/MyPilot-x64.AppImage)
-
-Every AI browser tries to be both a browser *and* an agent. Keep your normal Chrome — this is just the agent half.
-
-Ports your cookies into a fresh Chromium so agents are logged in everywhere you are, and spawns tasks from anywhere with a keyboard shortcut.
-
-Built on [Browser Harness](https://github.com/browser-use/browser-harness).
-
-<img width="3542" height="2298" alt="CleanShot 2026-05-01 at 12 18 27@2x" src="https://github.com/user-attachments/assets/edd4f6e0-0efe-4b16-b772-b73d5a1a6d23" />
-
-## Download
-
-**macOS (Apple Silicon):** [MyPilot-arm64.dmg](https://github.com/IamFIlINT/mypilot/releases/latest/download/MyPilot-arm64.dmg)
-
-**Windows (x64):** [MyPilot-Setup.exe](https://github.com/IamFIlINT/mypilot/releases/latest/download/MyPilot-Setup.exe)
-
-**Linux:** [MyPilot-x64.AppImage](https://github.com/IamFIlINT/mypilot/releases/latest/download/MyPilot-x64.AppImage) supports in-app auto-updates. `.deb` and `.rpm` packages are also published on GitHub Releases for manual installs.
-
-The buttons and links always point to the latest release.
-
-## Providers
-
-- **Anthropic** - Claude Code Subscription or API Key
-- **Codex** - ChatGPT Subscription or API Key
-
-## Channels 
-
-Inbound message channels can trigger agent sessions automatically. 
-
-- **WhatsApp** — text yourself with `@BU` to send and receive agent messages
+The Electron client. See the [repository README](../README.md) for what MyPilot
+is, how the two auth models work, and an honest note on current limitations.
 
 ## Development
 
-Requires [Task](https://taskfile.dev) (`brew install go-task`).
+Requires Node 20 or 22.
 
 ```bash
-task up    # Install deps and start the app
+yarn install
+yarn start        # electron-forge start
+yarn test         # vitest
+yarn typecheck    # tsc --noEmit
+yarn lint         # eslint
 ```
 
-Linux packages are built in Docker so local distro tools do not affect the output:
+Packaging needs `uv` on `PATH` and network access for the headless Chromium
+download. `yarn make` runs the `prePackage` hook, which:
 
-```bash
-task linux:make:docker
-```
+1. stages an allowlisted copy of the sidecar and the browser-use library into
+   `.forge-stage/` — the dev trees also hold a local venv, real browser profiles,
+   and upstream git history, none of which may ship;
+2. generates `app-update.yml` from `src/shared/releaseChannel.ts`, failing the
+   build if the release owner is unset or points at another repository;
+3. builds the bundled Python runtime (`scripts/build-python-runtime.mjs`), which
+   is platform-specific and therefore built in CI rather than committed. Set
+   `MYPILOT_SKIP_RUNTIME=1` for a quick local package that falls back to system
+   Python.
 
-## License
+Source locations for the two external trees can be overridden with
+`MYPILOT_SIDECAR_SRC`, `MYPILOT_BROWSER_USE_SRC`, and `MYPILOT_STAGE_DIR`.
 
-MIT
+See [`app/AGENTS.md`](AGENTS.md) for local profile and session-schema notes, and
+[`app/docs/`](docs/) for the agent-skill and CI references.
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE), which retains the upstream Browser Use notice.
