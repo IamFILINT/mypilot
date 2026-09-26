@@ -56,7 +56,7 @@ This is an early release, built for the Iranian market. Known gaps:
 Requires Node 20 or 22, and `yarn`.
 
 ```bash
-git clone https://github.com/IamFIlINT/mypilot.git
+git clone https://github.com/IamFILINT/mypilot.git
 cd mypilot/app
 yarn install
 

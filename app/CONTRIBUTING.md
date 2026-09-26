@@ -9,7 +9,7 @@ Install these first:
 From root:
 
 ```bash
-git clone https://github.com/IamFIlINT/mypilot.git
+git clone https://github.com/IamFILINT/mypilot.git
 cd desktop
 task up
 ```
@@ -46,7 +46,7 @@ To get your PR reviewed faster, you can message any of the MyPilot employees on 
 ## Reporting bugs
 
 Open an issue at
-[IamFIlINT/mypilot/issues](https://github.com/IamFIlINT/mypilot/issues)
+[IamFILINT/mypilot/issues](https://github.com/IamFILINT/mypilot/issues)
 with enough detail for someone else to reproduce the problem.
 
 Good bug reports include:

@@ -14,7 +14,7 @@
  */
 
 /** GitHub owner (user or org) that publishes MyPilot releases. */
-export const RELEASE_OWNER: string = 'IamFIlINT';
+export const RELEASE_OWNER: string = 'IamFILINT';
 
 /** Release repository name. */
 export const RELEASE_REPO: string = 'mypilot';
