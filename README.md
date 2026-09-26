@@ -4,14 +4,16 @@ An AI browser agent for your desktop. You describe a task, it drives a real
 Chromium, and you get the result back.
 
 MyPilot is a fork of the [Browser Use desktop app](https://github.com/browser-use/desktop),
-rebranded and rebuilt around a different model: **the client is free and open
-source, and the LLM credits you spend are the product.** There is no proprietary
-agent logic in this repository — the agent itself is the upstream
-[browser-use](https://github.com/browser-use/browser-use) library.
+rebuilt as a fully open-source client you can read, run, and modify. There is no
+proprietary agent logic in this repository — the agent itself is the upstream
+[browser-use](https://github.com/browser-use/browser-use) library, and the whole
+desktop layer around it is here for you to hack on.
+
+If you want to contribute, issues and pull requests are welcome.
 
 ## Two ways to run it
 
-**Bring your own key.** If you already pay Anthropic, OpenAI, or another
+**Bring your own key (BYOK).** If you already pay Anthropic, OpenAI, or another
 provider, point MyPilot at your own account and you pay them directly. Nothing
 is routed through us.
 
@@ -21,9 +23,10 @@ is routed through us.
 | **Codex** | OpenAI API key, or your ChatGPT subscription |
 | **BrowserCode** | Provider keys (Kimi, Qwen, MiniMax) |
 
-**MyPilot credits.** The MyPilot Agent engine sends every model call through our
-own gateway, which pools providers, fails over between them, and meters usage
-against your plan. You buy credits, not a key to paste.
+**Pooled credits (optional).** The MyPilot Agent engine can also route every
+model call through a managed gateway that pools providers and fails over between
+them. If you'd rather not wire up provider keys, that's the path — and it means
+someone else is paying for the tokens.
 
 ## Features
 
@@ -42,14 +45,21 @@ against your plan. You buy credits, not a key to paste.
 - **Bring up the phone.** WhatsApp can trigger a session by messaging
   `@MyPilot`.
 
-## Status
+## Status and contributing
 
-This is an early release, built for the Iranian market. Known gaps:
+Early days. Everything except the account backend is in this repository and
+buildable today. Known gaps:
 
+- The pooled-credits gateway and its account backend are not publicly hosted, so
+  only the BYOK engines work out of the box. Everything else does.
 - The MyPilot Agent engine runs its own headless browser. The interactive live
   view currently applies to the BYOK engines, not the MyPilot Agent.
-- The gateway and account backend are not yet publicly hosted.
 - macOS builds are unsigned; you will need to right-click → Open on first launch.
+
+Good first contributions: the live view for the MyPilot Agent engine, provider
+and model catalogue cleanup, and translations. See
+[`app/AGENTS.md`](app/AGENTS.md) for local development notes and
+[`app/docs/`](app/docs/) for the agent-skill and CI references.
 
 ## Building from source
 
