@@ -162,7 +162,7 @@ async def run() -> None:
     final = history.final_result() or "(no result)"
     try:
         distill_skill(
-            session_dir(),
+            profile_dir(),
             task,
             str(final),
             url=history.urls()[-1] if (history.urls() or []) and history.urls()[-1] else "",
