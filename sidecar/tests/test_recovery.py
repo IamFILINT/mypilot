@@ -465,3 +465,25 @@ async def test_on_attempt_ready_runs_for_every_attempt() -> None:
 
 def test_cost_key_is_part_of_the_accumulator() -> None:
     assert COST_KEY in new_usage()
+
+
+
+def test_distilled_skill_persists_in_profile_and_does_not_store_task_or_final(tmp_path) -> None:
+    from bu_sidecar.skills import distill_skill
+
+    task = "Open https://example.com/account?token=SECRET and use code 123456"
+    final = "Done. The user's private account number is 4111111111111111"
+    path = distill_skill(
+        tmp_path,
+        task,
+        final,
+        url="https://example.com/account?token=SECRET",
+        action_names=["navigate", "click", "done"],
+    )
+    assert path == tmp_path / "skills" / "distilled" / "example.md"
+    body = path.read_text(encoding="utf-8")
+    assert "SECRET" not in body
+    assert "123456" not in body
+    assert "4111111111111111" not in body
+    assert "example.com" in body
+    assert "navigate" in body
