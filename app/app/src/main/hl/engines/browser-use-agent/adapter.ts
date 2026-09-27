@@ -122,7 +122,9 @@ const browserUseAgentAdapter: EngineAdapter = {
     // (resolved from app settings by runEngine).
     if (ctx.savedApiKey) env.BU_ROUTER_TOKEN = ctx.savedApiKey;
     env.BU_ROUTER_URL = ctx.routerUrl ?? process.env.BU_ROUTER_URL ?? '';
-    env.BU_MODEL = process.env.BU_MODEL ?? 'gpt-4.1-mini';
+    // Prefer the model selected by the engine/session; keep the env fallback
+    // for developer overrides and older callers that don't provide one.
+    env.BU_MODEL = ctx.model ?? process.env.BU_MODEL ?? 'gpt-4.1-mini';
     env.BU_MAX_STEPS = '50';
     env.BU_HEADLESS = 'true';
     env.BU_SESSION_ID = ctx.sessionId;
