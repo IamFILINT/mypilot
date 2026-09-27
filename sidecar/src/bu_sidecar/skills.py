@@ -12,6 +12,7 @@ import re
 import shutil
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 def seed_skills(profile_dir: Path, seed_dir: Path | None) -> Path:
@@ -49,6 +50,16 @@ def _host_tokens(url: str) -> list[str]:
 
 def _slug_to_tokens(stem: str) -> list[str]:
     return [p for p in re.split(r'[^a-z0-9]+', stem.lower()) if len(p) >= 2]
+
+
+def _safe_hostname(url: str) -> str:
+    if not url:
+        return ''
+    try:
+        host = urlsplit(url).hostname
+    except ValueError:
+        return ''
+    return (host or '').lower()
 
 
 def match_skills(task: str, url: str, skills_dir: Path, limit: int = 3) -> list[Path]:
@@ -98,40 +109,44 @@ def build_system_instructions(matched: list[Path], skills_dir: Path) -> str:
 
 
 def distill_skill(
-    session_dir: Path,
+    profile_dir: Path,
     task: str,
     final: str,
     url: str | None = None,
     action_names: list[str] | None = None,
     was_successful: bool = True,
 ) -> Path | None:
-    """Write a distilled skill after a successful run.
+    """Write a privacy-safe distilled skill after a successful run.
 
-    The file lands under <session>/skills/distilled/ so future runs in the
-    same profile can reuse it via match_skills. Contents are a lightweight
-    "what worked" note keyed off the task + final result; we don't try to
-    replay the whole transcript.
+    Distilled skills live under <profile>/skills/distilled/ so they survive
+    across runs for the same persistent browser profile. We deliberately do
+    not persist raw task text, final output, or the full URL: those can contain
+    credentials, personal data, search terms, or one-time codes. The learned
+    artifact keeps only the public hostname and a bounded list of action names.
     """
     if not was_successful:
         return None
-    out_dir = session_dir / 'skills' / 'distilled'
+    out_dir = profile_dir / 'skills' / 'distilled'
     out_dir.mkdir(parents=True, exist_ok=True)
-    host = _host_tokens(url or '')
-    task_tokens = [t for t in re.split(r'[^a-z0-9]+', task.lower())[:4] if len(t) >= 3]
-    key_tokens = [t for t in host] + task_tokens
-    slug = '-'.join(dict.fromkeys(key_tokens))[:80] or 'run'
-    dest = out_dir / f'{slug}.md'
-    actions = ', '.join(action_names[:12]) if action_names else ''
+    hostname = _safe_hostname(url or '')
+    host_tokens = _host_tokens(url or '')
+    slug = '-'.join(dict.fromkeys(host_tokens))[:80] or 'run'
+    actions = ', '.join(
+        str(name).strip()[:80]
+        for name in (action_names or [])[:12]
+        if str(name).strip()
+    )
     content = (
         f'# Distilled skill: {slug}\n\n'
         f'- distilled: {time.strftime("%Y-%m-%d %H:%M:%S")}\n'
-        f'- task: {task[:300]}\n'
-        f'- url: {url or "n/a"}\n'
+        f'- host: {hostname or "n/a"}\n'
         f'- actions used: {actions or "n/a"}\n\n'
         '## What worked\n\n'
-        f'{final[:2000]}\n'
+        'This skill was distilled from a successful run. Treat the recorded '
+        'action sequence as a hint and verify the current page state before use.\n'
     )
     try:
+        dest = out_dir / f'{slug}.md'
         dest.write_text(content, encoding='utf-8')
     except OSError:
         return None
