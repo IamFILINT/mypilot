@@ -305,6 +305,38 @@ async def test_live_browser_after_unfinished_run_is_left_to_upstream() -> None:
     assert events == []
 
 
+
+async def test_failed_attempt_cost_is_counted_before_relaunch() -> None:
+    first = FakeAgent(
+        totals={"prompt": 100, "completion": 10, "cached": 0},
+        outcome=RuntimeError("browser died"),
+    )
+    second = FakeAgent(
+        totals={"prompt": 50, "completion": 5, "cached": 0},
+        outcome=FakeHistory(done=True, cost=0.2),
+    )
+    # Give the fake first attempt a token-cost service with an async summary.
+    class CostService:
+        async def get_usage_summary(self) -> Any:
+            return type("Summary", (), {"total_cost": 0.75})()
+
+    first.token_cost_service = CostService()
+    build_browser, make_agent, probe, _browsers, _states, _calls = _harness(
+        [first, second], [False, True], []
+    )
+    events: list[dict] = []
+
+    outcome = await run_with_recovery(
+        make_agent=make_agent,
+        build_browser=build_browser,
+        read_totals=make_read_totals({id(first): first.totals, id(second): second.totals}),
+        emit=events.append,
+        probe=probe,
+    )
+
+    assert outcome.attempts == 2
+    assert outcome.usage_payload["cost_usd"] == 0.95
+
 async def test_relaunch_budget_is_bounded() -> None:
     agents = [
         FakeAgent(
@@ -433,3 +465,25 @@ async def test_on_attempt_ready_runs_for_every_attempt() -> None:
 
 def test_cost_key_is_part_of_the_accumulator() -> None:
     assert COST_KEY in new_usage()
+
+
+
+def test_distilled_skill_persists_in_profile_and_does_not_store_task_or_final(tmp_path) -> None:
+    from bu_sidecar.skills import distill_skill
+
+    task = "Open https://example.com/account?token=SECRET and use code 123456"
+    final = "Done. The user's private account number is 4111111111111111"
+    path = distill_skill(
+        tmp_path,
+        task,
+        final,
+        url="https://example.com/account?token=SECRET",
+        action_names=["navigate", "click", "done"],
+    )
+    assert path == tmp_path / "skills" / "distilled" / "example.md"
+    body = path.read_text(encoding="utf-8")
+    assert "SECRET" not in body
+    assert "123456" not in body
+    assert "4111111111111111" not in body
+    assert "example.com" in body
+    assert "navigate" in body

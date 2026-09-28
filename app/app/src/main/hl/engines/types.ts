@@ -151,6 +151,10 @@ export interface RunEngineOptions {
   harnessDir: string;
   attachments?: Array<{ name: string; mime: string; bytes: Buffer | Uint8Array }>;
   resumeSessionId?: string;
+  /** Model id to run with (session-sticky, stamped via onModelResolved on
+   *  prior runs). Adapters prefer this over env defaults; per-engine config
+   *  (e.g. BrowserCode settings) may override it in runEngine. */
+  model?: string;
   signal?: AbortSignal;
   onRunControl?: (control: EngineRunControl) => void;
   onEvent: (e: HlEvent) => void;

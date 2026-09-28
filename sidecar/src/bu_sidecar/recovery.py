@@ -168,8 +168,17 @@ def accumulate_usage(
     return cumulative
 
 
+async def attempt_cost_from_agent(agent: Any) -> float:
+    """Cost for an attempt even when Agent.run() raised."""
+    try:
+        summary = await agent.token_cost_service.get_usage_summary()
+        return float(getattr(summary, "total_cost", 0.0) or 0.0)
+    except Exception:
+        return 0.0
+
+
 def attempt_cost(history: Any) -> float:
-    """Cost for one attempt, as reported by its own usage summary."""
+    """Cost for one completed attempt, as reported by its usage summary."""
     usage = getattr(history, "usage", None)
     if usage is None:
         return 0.0
@@ -258,7 +267,8 @@ async def run_with_recovery(
         except Exception as exc:
             prior_state = _agent_state(agent)
             totals, attempt_model = read_totals(agent)
-            accumulate_usage(cumulative, totals)
+            failed_cost = await attempt_cost_from_agent(agent)
+            accumulate_usage(cumulative, totals, failed_cost)
             if attempt_model:
                 model = attempt_model
 
