@@ -267,7 +267,8 @@ async def run_with_recovery(
         except Exception as exc:
             prior_state = _agent_state(agent)
             totals, attempt_model = read_totals(agent)
-            accumulate_usage(cumulative, totals)
+            failed_cost = await attempt_cost_from_agent(agent)
+            accumulate_usage(cumulative, totals, failed_cost)
             if attempt_model:
                 model = attempt_model
 
