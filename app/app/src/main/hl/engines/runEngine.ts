@@ -162,7 +162,12 @@ export async function runEngine(opts: RunEngineOptions): Promise<void> {
   //    Anthropic key to OpenAI (or vice versa).
   let savedApiKey: string | undefined;
   let providerId: string | undefined;
-  let model: string | undefined;
+  // Session-sticky model (stamped via onModelResolved on prior runs), so
+  // resume/rerun/follow-up reuse the model that actually ran. Per-engine
+  // config below may override it; otherwise adapters fall back to env
+  // defaults. The router engine has no configured-model store, so it keeps
+  // the session value.
+  let model: string | undefined = opts.model;
   let routerUrl: string | undefined;
   let cliAuthed = false;
   try {
