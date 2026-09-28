@@ -222,3 +222,64 @@ describe('browsercode adapter tool parsing', () => {
     expect(ctx.pendingTools.size).toBe(0);
   });
 });
+
+describe('browsercode adapter registration', () => {
+  it('is registered as a first-class engine with the expected binary', () => {
+    const adapter = browserCodeAdapter();
+
+    expect(adapter.id).toBe('browsercode');
+    expect(adapter.displayName).toBe('BrowserCode');
+    expect(adapter.binaryName).toBe('bcode');
+  });
+});
+
+describe('browsercode adapter event parsing', () => {
+  it('ignores malformed lines without emitting events', () => {
+    const adapter = browserCodeAdapter();
+    const ctx = parseContext();
+
+    expect(adapter.parseLine('not json', ctx)).toEqual({ events: [] });
+    expect(adapter.parseLine('{"type":', ctx)).toEqual({ events: [] });
+  });
+
+  it('surfaces engine errors as terminal errors', () => {
+    const adapter = browserCodeAdapter();
+    const ctx = parseContext();
+
+    const result = adapter.parseLine(
+      JSON.stringify({ type: 'error', error: { message: 'boom' } }),
+      ctx,
+    );
+
+    expect(result.terminalError).toBe('browsercode_error: boom');
+    expect(result.events).toEqual([{ type: 'error', message: 'browsercode_error: boom' }]);
+  });
+
+  it('reports turn usage and completion on step_finish', () => {
+    const adapter = browserCodeAdapter();
+    const ctx = parseContext();
+
+    adapter.parseLine(JSON.stringify({ type: 'text', part: { text: 'done summarizing' } }), ctx);
+    const result = adapter.parseLine(JSON.stringify({
+      type: 'step_finish',
+      part: {
+        tokens: { input: 10, output: 5, cache: { read: 2 } },
+        cost: 0.001,
+        reason: 'stop',
+      },
+    }), ctx);
+
+    expect(result.events).toEqual([
+      {
+        type: 'turn_usage',
+        inputTokens: 10,
+        outputTokens: 5,
+        cachedInputTokens: 2,
+        costUsd: 0.001,
+        model: undefined,
+        source: 'exact',
+      },
+      { type: 'done', summary: 'done summarizing', iterations: 0 },
+    ]);
+  });
+});
