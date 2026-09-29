@@ -974,9 +974,7 @@ export class BrowserPool {
         sessionId: nextSessionId,
         remainingQueued: this.queue.length,
       });
-      // The session manager will need to call create() again for this session.
-      // We emit the session ID so the caller knows to retry.
-      // For now, just log — the session manager polls canCreate().
+      this.create(nextSessionId);
     }
   }
 }

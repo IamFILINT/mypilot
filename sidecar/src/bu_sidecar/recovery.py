@@ -40,6 +40,7 @@ log = logging.getLogger("bu_sidecar.recovery")
 DEFAULT_PROBE_TIMEOUT_S = 2.0
 DEFAULT_MAX_RELAUNCHES = 1
 DEFAULT_CLOSE_TIMEOUT_S = 5.0
+DEFAULT_RUN_TIMEOUT_S = 1800.0
 
 # Token counters tracked cumulatively across attempts.
 USAGE_KEYS = ("prompt", "completion", "cached")
@@ -147,6 +148,21 @@ def new_usage() -> dict[str, float]:
     return usage
 
 
+def _delta(
+    before: dict[str, int] | None,
+    after: dict[str, int] | None,
+) -> dict[str, int]:
+    """Per-attempt token delta, safe against cumulative usage_history carryover.
+
+    If ``injected_agent_state`` carries the token cost service across attempts,
+    ``after`` already includes prior attempts' tokens. Subtracting ``before``
+    yields only this attempt's spend.
+    """
+    b = before or {}
+    a = after or {}
+    return {key: max(0, int(a.get(key, 0) or 0) - int(b.get(key, 0) or 0)) for key in USAGE_KEYS}
+
+
 def accumulate_usage(
     cumulative: dict[str, float],
     totals: dict[str, int] | None,
@@ -235,6 +251,7 @@ async def run_with_recovery(
     emit: Callable[[dict[str, Any]], None] | None = None,
     max_relaunches: int = DEFAULT_MAX_RELAUNCHES,
     max_steps: int = 50,
+    run_timeout_s: float = DEFAULT_RUN_TIMEOUT_S,
     probe: Callable[[str | None], Awaitable[bool]] | None = None,
 ) -> RunOutcome:
     """Run the agent, relaunching a dead browser within a bounded budget.
@@ -263,12 +280,14 @@ async def run_with_recovery(
         totals, attempt_model = read_totals(agent)
         history: Any = None
         try:
-            history = await agent.run(max_steps=max_steps)
+            history = await asyncio.wait_for(
+                agent.run(max_steps=max_steps), timeout=run_timeout_s
+            )
         except Exception as exc:
             prior_state = _agent_state(agent)
-            totals, attempt_model = read_totals(agent)
+            after_totals, attempt_model = read_totals(agent)
             failed_cost = await attempt_cost_from_agent(agent)
-            accumulate_usage(cumulative, totals, failed_cost)
+            accumulate_usage(cumulative, _delta(totals, after_totals), failed_cost)
             if attempt_model:
                 model = attempt_model
 
@@ -288,8 +307,8 @@ async def run_with_recovery(
             continue
 
         prior_state = _agent_state(agent)
-        totals, attempt_model = read_totals(agent)
-        accumulate_usage(cumulative, totals, attempt_cost(history))
+        after_totals, attempt_model = read_totals(agent)
+        accumulate_usage(cumulative, _delta(totals, after_totals), attempt_cost(history))
         if attempt_model:
             model = attempt_model
 

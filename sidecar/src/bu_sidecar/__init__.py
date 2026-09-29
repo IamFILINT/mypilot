@@ -123,7 +123,7 @@ async def run() -> None:
             try:
                 if browser.cdp_url:
                     emit({"type": "browser_launched", "cdp_url": browser.cdp_url})
-            except Exception:
+            except (Exception, SystemExit):
                 pass
 
         try:
@@ -306,7 +306,10 @@ def resolve_patchright_chromium() -> str | None:
         return None
     # Highest revision number wins; prefer patchright's own dirs when
     # marked (patchright reuses the plain chromium-* names).
-    candidates.sort(key=lambda c: c[0], reverse=True)
+    def _revision(name: str) -> int:
+        m = re.search(r'(\d+)$', name)
+        return int(m.group(1)) if m else 0
+    candidates.sort(key=lambda c: _revision(c[0]), reverse=True)
     return str(candidates[0][1])
 
 
@@ -374,7 +377,7 @@ def attach_step_stream(agent: Any) -> None:
                 }
 
             emit(payload)
-        except Exception:
+        except (Exception, SystemExit):
             pass  # streaming must never kill the run
 
     agent.eventbus.on(CreateAgentStepEvent, _on_step)

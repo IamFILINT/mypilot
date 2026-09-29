@@ -704,6 +704,9 @@ app.whenReady().then(async () => {
   ipcMain.handle('hl:get-engine', () => getEngine());
   ipcMain.handle('hl:set-engine', (_event, { engine }: { engine: string }) => {
     const e: EngineId = 'hl-inprocess';
+    if (engine !== e) {
+      mainLogger.warn('hl:set-engine.unsupported', { engine });
+    }
     setEngine(e);
     return e;
   });

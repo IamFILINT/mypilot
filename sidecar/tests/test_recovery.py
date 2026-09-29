@@ -72,9 +72,11 @@ class FakeAgent:
         self.model = model
         self.state = f"state-{id(self)}"
         self.max_steps_seen: int | None = None
+        self.usage_history: list[dict[str, int]] = []
 
     async def run(self, max_steps: int) -> Any:
         self.max_steps_seen = max_steps
+        self.usage_history.append(dict(self.totals))
         if isinstance(self.outcome, BaseException):
             raise self.outcome
         return self.outcome
@@ -82,8 +84,9 @@ class FakeAgent:
 
 def make_read_totals(agent_totals: dict[int, dict[str, int]]):  # type: ignore[no-untyped-def]
     def read(agent: FakeAgent) -> tuple[dict[str, int], str]:
-        key = id(agent)
-        return dict(agent_totals.get(key, {"prompt": 0, "completion": 0, "cached": 0})), agent.model
+        if agent.usage_history:
+            return dict(agent.usage_history[-1]), agent.model
+        return {"prompt": 0, "completion": 0, "cached": 0}, agent.model
 
     return read
 
