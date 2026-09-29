@@ -557,6 +557,8 @@ export class SessionManager extends EventEmitter {
     this.abortControllers.delete(id);
     this.sessions.delete(id);
     this.termStates.delete(id);
+    this.engineSessionIds.delete(id);
+    this.sessionEngines.delete(id);
     this.db.deleteSession(id);
     mainLogger.info('SessionManager.deleteSession', { id });
   }

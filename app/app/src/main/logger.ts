@@ -104,14 +104,16 @@ export class RotatingFileWriter {
       this._rotate();
     }
 
-    try {
-      fs.appendFileSync(this.filePath, line + '\n', 'utf-8');
-    } catch (err) {
-      // Last-resort: write to stderr so we never silently lose logs
-      process.stderr.write(
-        `${LOG_PREFIX} Failed to write log line: ${(err as Error).message}\n`,
-      );
-    }
+    // Fire-and-forget async write — never block the event loop.
+    // Lines are queued by the caller; a dropped line under extreme load
+    // is preferable to janking the main process.
+    fs.appendFile(this.filePath, line + '\n', 'utf-8', (err) => {
+      if (err) {
+        process.stderr.write(
+          `${LOG_PREFIX} Failed to write log line: ${(err as Error).message}\n`,
+        );
+      }
+    });
   }
 
   getFilePath(): string {

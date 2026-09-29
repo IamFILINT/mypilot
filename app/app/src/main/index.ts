@@ -207,9 +207,6 @@ let onboardingWindow: BrowserWindow | null = null;
 let isQuitting = false;
 
 const sessionManager = new SessionManager(path.join(app.getPath('userData'), 'sessions.db'));
-// Bootstrap the editable helpers harness — writes stock helpers.js + TOOLS.json
-// to <userData>/harness/ on first run, preserves user edits on subsequent runs.
-bootstrapHarness();
 const browserPool = new BrowserPool();
 const sessionScreencast = new SessionScreencast(browserPool);
 let interruptBrowserSessionFromShortcut: ((sessionId: string) => boolean) | null = null;
@@ -435,6 +432,7 @@ function openShellAndWire(): BrowserWindow {
 // ---------------------------------------------------------------------------
 app.whenReady().then(async () => {
   mainLogger.info('main.appReady', { msg: 'Electron app ready — initializing MyPilot' });
+  bootstrapHarness();
   registerBrowserIdentityHeaders();
   registerChatfileHandler();
   startResourceMonitor(resourceMonitorContext);
@@ -599,6 +597,8 @@ app.whenReady().then(async () => {
     });
     startSessionWithAgent(id).catch((err) => {
       mainLogger.error('main.pill:submit.startFailed', { id, error: (err as Error).message });
+    }).finally(() => {
+      activeAgents.delete(id);
     });
 
     // If onboarding is active, notify it so it can auto-complete and open the shell
@@ -617,6 +617,11 @@ app.whenReady().then(async () => {
     if (ctrl) {
       ctrl.abort();
       activeAgents.delete(task_id);
+      const run = activeRunControls.get(task_id);
+      if (run) {
+        run.control.terminate();
+        activeRunControls.delete(task_id);
+      }
       return { cancelled: true };
     }
     return { cancelled: false };

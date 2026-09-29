@@ -304,7 +304,7 @@ function addOsUsage(
 
 function readOsProcessTable(errors: string[]): Map<number, OsProcessRow> {
   if (process.platform === 'win32') {
-    return new Map();
+    return readWindowsProcessTable(errors);
   }
 
   const result = spawnSync('ps', ['-axo', 'pid=,ppid=,pcpu=,rss=,command='], {
@@ -339,6 +339,34 @@ function readOsProcessTable(errors: string[]): Map<number, OsProcessRow> {
     });
   }
 
+  return table;
+}
+
+function readWindowsProcessTable(errors: string[]): Map<number, OsProcessRow> {
+  const result = spawnSync(
+    'wmic',
+    ['process', 'get', 'ProcessId,ParentProcessId,WorkingSetSize,CommandLine', '/format:csv'],
+    { encoding: 'utf8', timeout: 5_000 },
+  );
+  if (result.error) {
+    errors.push(`os_process_scan_failed:${result.error.message}`);
+    return new Map();
+  }
+  if (result.status !== 0) {
+    errors.push(`os_process_scan_exit:${result.status ?? 'unknown'}`);
+    return new Map();
+  }
+  const table = new Map<number, OsProcessRow>();
+  for (const line of result.stdout.split(/\r?\n/).slice(1)) {
+    const parts = line.split(',');
+    if (parts.length < 4) continue;
+    const pid = Number(parts[parts.length - 4]);
+    const ppid = Number(parts[parts.length - 3]);
+    const rssKb = Number(parts[parts.length - 2]) / 1024;
+    const command = parts[parts.length - 1] ?? '';
+    if (!Number.isFinite(pid) || !Number.isFinite(ppid)) continue;
+    table.set(pid, { pid, ppid, cpuPercent: 0, rssKb, command });
+  }
   return table;
 }
 

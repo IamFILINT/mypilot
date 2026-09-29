@@ -251,21 +251,28 @@ function materializeRawTree(opts: {
   }
 
   try {
-    fs.rmSync(target, { recursive: true, force: true });
+    const tempDir = `${target}.tmp-${Date.now()}`;
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    let bytes = 0;
+    for (const [modulePath, content] of entries) {
+      const rel = modulePath.slice(prefix.length);
+      const outPath = path.join(tempDir, rel);
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      fs.writeFileSync(outPath, content, 'utf-8');
+      if (executableBasenames?.has(path.basename(outPath))) fs.chmodSync(outPath, 0o755);
+      bytes += content.length;
+    }
+
+    const backupDir = `${target}.bak-${Date.now()}`;
+    const targetExists = fs.existsSync(target);
+    if (targetExists) fs.renameSync(target, backupDir);
+    fs.renameSync(tempDir, target);
+    if (targetExists) fs.rmSync(backupDir, { recursive: true, force: true });
   } catch (err) {
-    mainLogger.error(`harness.bootstrap.${logName}.clear.failed`, { target, error: (err as Error).message });
+    mainLogger.error(`harness.bootstrap.${logName}.write.failed`, { target, error: (err as Error).message });
     throw err;
   }
 
-  let bytes = 0;
-  for (const [modulePath, content] of entries) {
-    const rel = modulePath.slice(prefix.length);
-    const outPath = path.join(target, rel);
-    fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    fs.writeFileSync(outPath, content, 'utf-8');
-    if (executableBasenames?.has(path.basename(outPath))) fs.chmodSync(outPath, 0o755);
-    bytes += content.length;
-  }
-
-  mainLogger.info(`harness.bootstrap.${logName}.wrote`, { target, files: entries.length, bytes });
+  mainLogger.info(`harness.bootstrap.${logName}.wrote`, { target, files: entries.length });
 }
