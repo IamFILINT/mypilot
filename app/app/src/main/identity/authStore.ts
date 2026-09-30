@@ -444,7 +444,7 @@ export interface CredentialStatus {
 
 function maskKey(key: string): string {
   if (key.length <= 8) return '****';
-  return `${key.slice(0, 7)}...${key.slice(-4)}`;
+  return `...${key.slice(-4)}`;
 }
 
 export async function getCredentialStatus(): Promise<CredentialStatus> {
@@ -506,8 +506,12 @@ export async function resolveAuth(): Promise<ResolvedAuth> {
   const apiKey = await loadApiKey();
   if (apiKey) return { type: 'apiKey', value: apiKey };
 
-  const envKey = process.env.ANTHROPIC_API_KEY;
-  if (envKey) return { type: 'apiKey', value: envKey };
+  // Dev-only fallback: env vars are visible to all child processes and
+  // crash-report attachments, so never read them in packaged builds.
+  if (process.env.NODE_ENV !== 'production') {
+    const envKey = process.env.ANTHROPIC_API_KEY;
+    if (envKey) return { type: 'apiKey', value: envKey };
+  }
 
   return null;
 }

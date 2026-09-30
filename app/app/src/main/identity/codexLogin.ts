@@ -40,7 +40,7 @@ const ANSI_RE = /\x1b\[[0-9;]*[A-Za-z]|\x1b\]8;[^\x07]*\x07/g;
 // Device-verification URL and XXXX-XXXX code extraction. Both patterns are
 // matched after ANSI is stripped so colour codes don't confuse the regex.
 const URL_RE = /https:\/\/auth\.openai\.com\/[^\s]+/;
-const CODE_RE = /\b([A-Z0-9]{4}-[A-Z0-9]{4,6})\b/;
+const CODE_RE = /\b([A-Z0-9]{4}-[A-Z0-9]{4})\b/;
 
 export interface CodexLoginResult {
   opened: boolean;

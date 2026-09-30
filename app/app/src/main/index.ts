@@ -1126,12 +1126,15 @@ app.whenReady().then(async () => {
 
   async function drainQueuedFollowUp(id: string, boundary: 'tool_result' | 'done'): Promise<void> {
     if (drainingQueuedFollowUps.has(id)) return;
+    drainingQueuedFollowUps.add(id);
     const q = queuedFollowUps.get(id);
     const next = q?.shift();
-    if (!next) return;
+    if (!next) {
+      drainingQueuedFollowUps.delete(id);
+      return;
+    }
     if (q.length === 0) queuedFollowUps.delete(id);
 
-    drainingQueuedFollowUps.add(id);
     try {
       const status = sessionManager.getSessionStatus(id);
       mainLogger.info('main.sessions.followUpDrain', { id, boundary, status });
@@ -1540,7 +1543,7 @@ app.whenReady().then(async () => {
       ? path.resolve(validated)
       : path.resolve(harnessDir(), validated);
     const outputsRoot = path.resolve(harnessDir(), 'outputs');
-    if (!resolvedPath.startsWith(outputsRoot + path.sep)) {
+    if (resolvedPath !== outputsRoot && !resolvedPath.startsWith(outputsRoot + path.sep)) {
       mainLogger.warn('main.sessions:download-output.rejected', { filePath: validated });
       throw new Error('refused: path outside outputs dir');
     }
@@ -1904,6 +1907,7 @@ app.whenReady().then(async () => {
   // removed it without clearing entry.attached, leaving the renderer seeing a
   // phantom "Browser starting…" state), re-add it here so recovery is automatic.
   ipcMain.on('sessions:view-resize', (_event, id: string, bounds: { x: number; y: number; width: number; height: number }) => {
+    const validatedId = assertString(id, 'id', 100);
     if (!shellWindow) return;
     const view = browserPool.getView(id);
     if (!view) return;

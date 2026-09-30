@@ -135,8 +135,7 @@ export function HtmlBlock({ content, complete = true, tag = 'html' }: Props): Re
         // No `allow-scripts`. allow-same-origin is required for the
         // parent to read contentDocument.scrollHeight. See file header.
         sandbox="allow-same-origin"
-        srcDoc={wrap(content, theme)}
-        onLoad={handleLoad}
+        srcDoc={wrap(content, theme)}        onLoad={handleLoad}
         style={{ height: `${cappedHeight}px` }}
       />
       <div className="chatv2-htmlblock__bar">
@@ -172,6 +171,12 @@ export function HtmlBlock({ content, complete = true, tag = 'html' }: Props): Re
  *     scrollHeight math fight you.
  */
 function wrap(content: string, theme: 'light' | 'dark'): string {
+  // Sanitize agent-generated HTML to prevent XSS. The iframe has no scripts,
+  // but a malicious agent could still inject event handlers or other attributes.
+  const sanitized = content
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/javascript\s*:/gi, '');
   // Baseline tokens only — used when the agent's own block doesn't set
   // explicit colors. The agent should target the same theme via its
   // emitted styles; these defaults make naked HTML still readable.

@@ -82,6 +82,14 @@ export function createTermTranslatorState(): TermTranslatorState {
 const SKILL_PATH_RE = /(?:domain-skills|interaction-skills)\/.+\.md$|skills\/.+\/SKILL\.md$/;
 const AGENT_SKILL_TARGET_RE = /\bagent-skill(?:\.cmd)?\s+(view|validate|create|patch|delete)\s+(?:"([^"]+)"|'([^']+)'|([^\s]+))/;
 
+// Strip ANSI escape sequences from agent-controlled text so a malicious
+// event cannot manipulate the terminal display (clear screen, set title, etc.).
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b[()#][0-9A-Z]/g;
+function stripAnsi(s: string): string {
+  return s.replace(ANSI_RE, '');
+}
+
 function hasSyntheticAgentSkillEvent(command: string): boolean {
   const match = command.match(AGENT_SKILL_TARGET_RE);
   if (!match) return false;
@@ -128,7 +136,7 @@ export function hlEventToTermBytes(event: HlEvent, state: TermTranslatorState): 
       state.inThinking = true;
       if (first) out.push(DIM);
       // Thinking deltas may contain \n; convert to CRLF for correct line feeds in xterm.
-      out.push(event.text.replace(/\r?\n/g, '\r\n'));
+      out.push(stripAnsi(event.text).replace(/\r?\n/g, '\r\n'));
       return finish();
     }
 
@@ -149,7 +157,7 @@ export function hlEventToTermBytes(event: HlEvent, state: TermTranslatorState): 
       // highlight reads as a banded block. First line gets the `›` prefix;
       // continuation lines get a 2-space indent so wrapped prose aligns under
       // the prompt text.
-      const lines = event.text.split(/\r?\n/);
+      const lines = stripAnsi(event.text).split(/\r?\n/);
       const formatted = lines
         .map((line, i) => {
           const prefix = i === 0 ? '› ' : '  ';
@@ -170,8 +178,8 @@ export function hlEventToTermBytes(event: HlEvent, state: TermTranslatorState): 
       }
       state.pendingSkillToolName = null;
       const args = truncate(stringifyArgs(event.args), 160);
-      out.push(`${FG.cyan}⏺ ${event.name}${RESET}`);
-      if (args) out.push(` ${FG.grey}${args}${RESET}`);
+      out.push(`${FG.cyan}⏺ ${stripAnsi(event.name)}${RESET}`);
+      if (args) out.push(` ${FG.grey}${stripAnsi(args)}${RESET}`);
       out.push('\r\n');
       return finish();
     }
@@ -183,8 +191,8 @@ export function hlEventToTermBytes(event: HlEvent, state: TermTranslatorState): 
         return finish();
       }
       const glyph = event.ok ? `${FG.green}✓` : `${FG.red}✗`;
-      const preview = firstLine(event.preview || '', 160);
-      out.push(`${glyph} ${event.name}${RESET}`);
+      const preview = firstLine(stripAnsi(event.preview || ''), 160);
+      out.push(`${glyph} ${stripAnsi(event.name)}${RESET}`);
       if (preview) out.push(` ${FG.grey}${preview}${RESET}`);
       if (event.ms > 0) out.push(` ${FG.grey}(${formatDurationMs(event.ms)})${RESET}`);
       out.push('\r\n');
@@ -209,12 +217,12 @@ export function hlEventToTermBytes(event: HlEvent, state: TermTranslatorState): 
     }
 
     case 'file_output':
-      out.push(`${FG.yellow}⬇ ${event.name}${RESET} ${FG.grey}(${event.size} bytes)${RESET}\r\n`);
+      out.push(`${FG.yellow}⬇ ${stripAnsi(event.name)}${RESET} ${FG.grey}(${event.size} bytes)${RESET}\r\n`);
       return finish();
 
     case 'notify': {
       const color = event.level === 'blocking' ? FG.brightRed : FG.blue;
-      out.push(`${color}! ${event.message}${RESET}\r\n`);
+      out.push(`${color}! ${stripAnsi(event.message)}${RESET}\r\n`);
       return finish();
     }
 
@@ -226,14 +234,14 @@ export function hlEventToTermBytes(event: HlEvent, state: TermTranslatorState): 
       // white (no color code) so long-form summaries read as body copy.
       const summary = event.summary?.trim();
       if (summary && summary !== '(done)') {
-        const formatted = summary.replace(/\r?\n/g, '\r\n');
+        const formatted = stripAnsi(summary).replace(/\r?\n/g, '\r\n');
         out.push(`\r\n${formatted}`);
       }
       return finish();
     }
 
     case 'error':
-      out.push(`${BOLD}${FG.brightRed}✗ ${event.message}${RESET}\r\n`);
+      out.push(`${BOLD}${FG.brightRed}✗ ${stripAnsi(event.message)}${RESET}\r\n`);
       return finish();
 
     case 'turn_usage':

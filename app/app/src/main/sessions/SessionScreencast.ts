@@ -227,7 +227,15 @@ export class SessionScreencast {
     this.previews.delete(sessionId);
     preview.stopped = true;
     clearInterval(preview.timer);
-    if (!preview.inFlight) this.cleanupPreview(sessionId, preview);
+    if (!preview.inFlight) {
+      this.cleanupPreview(sessionId, preview);
+    } else {
+      // If a capture is in flight, schedule cleanup after a timeout so we
+      // don't leak the debugger attachment if the CDP call hangs.
+      setTimeout(() => {
+        if (preview.stopped) this.cleanupPreview(sessionId, preview);
+      }, 5000);
+    }
 
     mainLogger.info('SessionScreencast.stop.ok', {
       sessionId,

@@ -101,10 +101,11 @@ def build_system_instructions(matched: list[Path], skills_dir: Path) -> str:
     for file in matched:
         try:
             body = file.read_text(encoding='utf-8')
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             continue
         rel = file.relative_to(skills_dir).as_posix()
-        blocks.append(f'\n<skill path="{rel}">\n{body.strip()}\n</skill>')
+        safe_body = body.replace('</skill>', '<\\/skill>')
+        blocks.append(f'\n<skill path="{rel}">\n{safe_body.strip()}\n</skill>')
     return '\n'.join(blocks)
 
 
@@ -131,6 +132,11 @@ def distill_skill(
     hostname = _safe_hostname(url or '')
     host_tokens = _host_tokens(url or '')
     slug = '-'.join(dict.fromkeys(host_tokens))[:80] or 'run'
+    # Append a counter so multiple distillations to the same host don't
+    # overwrite each other.
+    existing = list(out_dir.glob(f'{slug}*.md'))
+    if existing:
+        slug = f'{slug}-{len(existing) + 1}'
     actions = ', '.join(
         str(name).strip()[:80]
         for name in (action_names or [])[:12]

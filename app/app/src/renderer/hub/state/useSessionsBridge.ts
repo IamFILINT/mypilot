@@ -102,6 +102,12 @@ export function useSessionsBridge(): void {
         if (cancelled) return;
         hydrated = true;
         pending.splice(0).forEach((fn) => fn());
+        // Flush any buffered output for sessions that may have been added
+        // by other IPC events before listAll failed.
+        const store = useSessionsStore.getState();
+        for (const id of Object.keys(store.byId)) {
+          flushPendingOutput(id);
+        }
       });
 
     const unsubOutput = api.on.sessionOutput((id, event) => {

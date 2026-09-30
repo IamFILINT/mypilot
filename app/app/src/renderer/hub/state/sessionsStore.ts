@@ -105,8 +105,16 @@ export const useSessionsStore = create<SessionsState>()(
           return;
         }
         const now = Date.now();
+        // Cap output array to prevent unbounded memory growth on long sessions.
+        const MAX_OUTPUT = 1000;
+        if (prev.output.length >= MAX_OUTPUT) {
+          prev.output.splice(0, prev.output.length - MAX_OUTPUT + 1);
+        }
         prev.output.push(event);
         if (!prev.outputTimestamps) prev.outputTimestamps = [];
+        if (prev.outputTimestamps.length >= MAX_OUTPUT) {
+          prev.outputTimestamps.splice(0, prev.outputTimestamps.length - MAX_OUTPUT + 1);
+        }
         prev.outputTimestamps.push(now);
         prev.lastActivityAt = now;
         state.order = reorder(state.byId);

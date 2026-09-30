@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 
@@ -84,7 +84,7 @@ export function Markdown({
           // and the link falls back to broken rendering.
           if (typeof url === 'string' && url.startsWith(OUTPUT_PATH_SCHEME)) return url;
           // For everything else use the default safe-URL policy.
-          return url;
+          return defaultUrlTransform(url);
         }}
         components={{
           a: ({ node, href, children, ...props }) => {
