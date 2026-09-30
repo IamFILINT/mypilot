@@ -10,7 +10,7 @@ From root:
 
 ```bash
 git clone https://github.com/IamFILINT/mypilot.git
-cd desktop
+cd app
 task up
 ```
 

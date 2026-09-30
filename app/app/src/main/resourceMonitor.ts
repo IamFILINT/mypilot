@@ -394,7 +394,7 @@ function ownerForRow(owner: ResourceOwner, descendant: boolean): ResourceOwner {
 }
 
 function harnessOwnerFromCommand(command: string): ResourceOwner | null {
-  if (!/browser-harness-js\/sdk\/repl\.ts/u.test(command)) return null;
+  if (!/browser-harness-js/u.test(command)) return null;
   const sessionId = command.match(/--resource-session=([^\s]+)/u)?.[1];
   if (!sessionId || sessionId === 'unknown') return null;
   return {

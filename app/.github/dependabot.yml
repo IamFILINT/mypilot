@@ -30,9 +30,7 @@ updates:
         patterns:
           - 'eslint*'
           - '@typescript-eslint/*'
-    ignore:
-      # Typescript 4.5 is pinned intentionally — upgrade is a scoped project
-      - dependency-name: 'typescript'
+    ignore: []
 
   # GitHub Actions versions
   - package-ecosystem: github-actions

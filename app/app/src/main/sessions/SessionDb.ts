@@ -406,8 +406,7 @@ export class SessionDb {
     mainLogger.info('SessionDb.insertSession.attempt', { id: session.id, status: session.status, promptLength: session.prompt.length, closed: this.closed });
     try {
       const result = this.stmts.insertSession.run(session.id, session.prompt, session.status, session.createdAt, session.error ?? null, session.group ?? null, now, session.originChannel ?? null, session.originConversationId ?? null);
-      const totalRows = (this.db.prepare('SELECT COUNT(*) as c FROM sessions').get() as { c: number }).c;
-      mainLogger.info('SessionDb.insertSession.success', { id: session.id, status: session.status, changes: result.changes, totalRowsAfter: totalRows });
+      mainLogger.info('SessionDb.insertSession.success', { id: session.id, status: session.status, changes: result.changes });
     } catch (err) {
       mainLogger.error('SessionDb.insertSession.failed', { id: session.id, error: (err as Error).message, stack: (err as Error).stack });
       throw err;

@@ -208,7 +208,6 @@ const config: ForgeConfig = {
 
   makers: [
     // macOS: DMG (replaces MakerZIP for darwin per Critic finding + ADR §12)
-    // @electron-forge/maker-dmg must be installed — see .track-F-deps.txt
     new MakerDMG(
       {
         // background: 'assets/dmg-background.png',  // TODO: add DMG background art

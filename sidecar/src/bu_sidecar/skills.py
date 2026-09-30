@@ -45,7 +45,9 @@ def _host_tokens(url: str) -> list[str]:
     host = host.split('/')[0].split('@')[-1].split(':')[0].lower()
     parts = [p for p in re.split(r'[.\-]', host) if len(p) >= 2]
     # Fold "www" and common ccTLD noise away; keep the registrable-ish tokens.
-    return [p for p in parts if p not in ('www', 'com', 'org', 'net', 'io', 'co', 'uk', 'eu')]
+    # Note: 'io' is kept because github.io and similar domains use it as a
+    # meaningful token, not just a TLD.
+    return [p for p in parts if p not in ('www', 'com', 'org', 'net', 'co', 'uk', 'eu')]
 
 
 def _slug_to_tokens(stem: str) -> list[str]:

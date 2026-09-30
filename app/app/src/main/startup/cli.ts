@@ -183,13 +183,13 @@ function isPortFreeSync(port: number): boolean {
   if (process.platform === 'win32') {
     try {
       const res = spawnSync('netstat', ['-an'], { encoding: 'utf8', timeout: 2000 });
-      if (res.status !== 0 || !res.stdout) return true;
+      if (res.status !== 0 || !res.stdout) return false;
       const needle = `:${port} `;
       return !res.stdout
         .split(/\r?\n/)
         .some((line) => line.includes(needle) && /LISTENING/i.test(line));
     } catch {
-      return true;
+      return false;
     }
   }
 

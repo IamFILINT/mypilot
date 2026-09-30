@@ -123,7 +123,6 @@ export class RotatingFileWriter {
   private _rotate(): void {
     // Shift existing rotated files: .5 → deleted, .4 → .5, … .1 → .2
     for (let i = this.maxFiles; i >= 1; i--) {
-      const src = `${this.filePath}.${i - 1 === 0 ? '' : String(i - 1)}`.replace(/\.$/, '');
       const dst = `${this.filePath}.${i}`;
       const actual = i === 1 ? this.filePath : `${this.filePath}.${i - 1}`;
       try {
@@ -134,7 +133,7 @@ export class RotatingFileWriter {
         process.stderr.write(`${LOG_PREFIX} Rotation error: ${(err as Error).message}\n`);
       }
     }
-    // After rotation the primary file no longer exists; appendFileSync will create it
+    // After rotation the primary file no longer exists; appendFile will create it
   }
 }
 
