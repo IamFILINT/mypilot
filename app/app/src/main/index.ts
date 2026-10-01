@@ -98,7 +98,7 @@ import started from 'electron-squirrel-startup';
 import { createShellWindow } from './window';
 import { createTray, refreshTrayMenu } from './tray';
 // Track B — Pill + hotkeys
-import { createPillWindow, togglePill, hidePill, sendToPill, setPillHeight, forwardAgentEvent, PILL_HEIGHT_COLLAPSED, PILL_HEIGHT_EXPANDED } from './pill';
+import { createPillWindow, togglePill, hidePill, sendToPill, setPillHeight, PILL_HEIGHT_COLLAPSED, PILL_HEIGHT_EXPANDED } from './pill';
 import { createLogsWindow, attachToHub as attachLogsToHub, toggleLogs, hideLogs, getLogsWindow, showLogs, setLogsMode, updateLogsAnchor, focusLogsFollowUp } from './logsPill';
 import * as takeoverOverlay from './takeoverOverlay';
 import { sendSessionNotification } from './notifications';

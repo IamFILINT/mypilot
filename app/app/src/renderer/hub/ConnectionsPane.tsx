@@ -4,7 +4,6 @@ import claudeCodeLogo from './claude-code-logo.svg';
 import openaiLogoDark from './openai-logo.svg';
 import openaiLogoLight from './openai-logo-light.svg';
 import codexLogoDark from './codex-logo.svg';
-import codexLogoLight from './openai-logo-light.svg';
 import opencodeLogoDark from './opencode-logo-dark.svg';
 import opencodeLogoLight from './opencode-logo-light.svg';
 import kimiLogoDark from './kimi-color.svg';
@@ -16,6 +15,8 @@ import { CookieBrowser, type CookieBrowserApi } from '../shared/CookieBrowser';
 import { pollInstalledStatus } from '../shared/installStatus';
 import { useToast } from '@/renderer/components/base/Toast';
 
+// codex's light mark is the same asset as openai's; one import serves both names.
+const codexLogoLight = openaiLogoLight;
 type WaStatus = 'disconnected' | 'connecting' | 'qr_ready' | 'connected' | 'error';
 type AuthType = 'oauth' | 'apiKey' | 'none';
 interface AuthStatus {

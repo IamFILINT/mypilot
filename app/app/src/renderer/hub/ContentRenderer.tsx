@@ -1,5 +1,5 @@
 import React from 'react';
-import { Markdown, linkifyOutputPaths, linkifyPathsToReact } from './Markdown';
+import { Markdown, linkifyPathsToReact } from './Markdown';
 
 // Strings that mention an output path get rendered via Markdown so the path
 // becomes a clickable link. Pure plain text stays plain to avoid mangling

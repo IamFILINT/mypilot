@@ -6,7 +6,7 @@ import openaiLogoLight from './openai-logo-light.svg';
 import opencodeLogoDark from './opencode-logo-dark.svg';
 import opencodeLogoLight from './opencode-logo-light.svg';
 import { useThemedAsset } from '../design/useThemedAsset';
-import type { AgentSession, OutputEntry } from './types';
+import type { AgentSession } from './types';
 
 function formatElapsed(createdAt: number): string {
   const seconds = Math.floor((Date.now() - createdAt) / 1000);
@@ -146,7 +146,7 @@ interface AgentPaneProps {
   cycleShortcut?: string;
 }
 
-export function AgentPane({ session, focused, onRerun, onResume, onPause, onFollowUp, onDismiss, onCancel, onSelect, onOpenFollowUp, onOpenSettings, onOpenChat, shouldDetachBrowserOnUnmount, followUpShortcut, cycleShortcut }: AgentPaneProps): React.ReactElement {
+export function AgentPane({ session, focused, onRerun, onResume, onPause, onDismiss, onCancel, onSelect, onOpenSettings, onOpenChat, shouldDetachBrowserOnUnmount }: AgentPaneProps): React.ReactElement {
   const openaiLogo = useThemedAsset(openaiLogoDark, openaiLogoLight);
   const opencodeLogo = useThemedAsset(opencodeLogoDark, opencodeLogoLight);
   const paneRef = useRef<HTMLDivElement>(null);

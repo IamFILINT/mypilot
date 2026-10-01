@@ -47,8 +47,13 @@ interface SparklineProps {
   fillTo: string;
 }
 
+// Hoisted so the empty-series fallback keeps a stable identity. Inline
+// `[0, 0]` would allocate a new array on every render, which changes the
+// useMemo dependencies below each time and defeats the memo entirely.
+const EMPTY_SERIES: number[] = [0, 0];
+
 function Sparkline({ values, gradientId, width, height, color, fillFrom, fillTo }: SparklineProps): React.ReactElement | null {
-  const data = values.length > 0 ? values : [0, 0];
+  const data = values.length > 0 ? values : EMPTY_SERIES;
   const xScale = useMemo(
     () => scaleLinear({ domain: [0, data.length - 1], range: [0, width] }),
     [data.length, width],
