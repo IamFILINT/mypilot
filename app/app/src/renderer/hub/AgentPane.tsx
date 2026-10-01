@@ -1,8 +1,7 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { STATUS_LABEL } from './constants';
-import { ContentRenderer, getPreview } from './ContentRenderer';
+import { ContentRenderer } from './ContentRenderer';
 import { Markdown, linkifyOutputPaths } from './Markdown';
-import { TerminalPane } from './TerminalPane';
 import claudeCodeLogo from './claude-code-logo.svg';
 import openaiLogoDark from './openai-logo.svg';
 import openaiLogoLight from './openai-logo-light.svg';
@@ -316,145 +315,6 @@ function FileOutputRow({ entry }: { entry: OutputEntry }): React.ReactElement {
   );
 }
 
-function OutputRow({ entry }: { entry: OutputEntry }): React.ReactElement {
-  const [open, setOpen] = useState(false);
-  const toggle = () => setOpen((o) => !o);
-
-  if (entry.type === 'thinking') {
-    return (
-      <div className="step step--thinking">
-        <div className="step__text">
-          <Markdown source={linkifyOutputPaths(entry.content)} />
-        </div>
-      </div>
-    );
-  }
-
-  if (entry.type === 'tool_call') {
-    if (entry.groupCount && entry.groupCount > 1) {
-      return <ToolGroup entry={entry} />;
-    }
-    return <ToolStep entry={entry} />;
-  }
-
-  if (entry.type === 'tool_result') {
-    const dur = entry.duration;
-    return (
-      <div className="step step--tool">
-        <div className="step__row" onClick={toggle} role="button" tabIndex={0} aria-expanded={open}>
-          <span className="step__icon">{toolIcon(entry.tool)}</span>
-          <span className="step__name">{entry.tool}</span>
-          <span className="step__fill" />
-          {dur != null && <span className="step__dur">{formatDuration(dur)}</span>}
-        </div>
-        {open && (
-          <div className="step__detail">
-            <ContentRenderer content={entry.content} type="tool_result" />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (entry.type === 'skill_written') {
-    const label = entry.harnessAction === 'delete' ? 'Deleted skill' : entry.harnessAction === 'patch' ? 'Edited skill' : 'Wrote skill';
-    return (
-      <div className="step step--skill">
-        <span className="step__icon">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M2 11.5V3a1.5 1.5 0 011.5-1.5h7A1.5 1.5 0 0112 3v7a1.5 1.5 0 01-1.5 1.5h-7L2 11.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-            <path d="M5 5h4M5 7.5h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </span>
-        <span className="step__skill-label">{label}</span>
-        <span className="step__skill-topic">{entry.content}</span>
-      </div>
-    );
-  }
-
-  if (entry.type === 'skill_used') {
-    return (
-      <div className="step step--skill-used">
-        <span className="step__icon">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M2 3h10v8H2z" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M5 6h4M5 8h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </span>
-        <span className="step__skill-label">Read skill</span>
-        <span className="step__skill-topic">{entry.content}</span>
-      </div>
-    );
-  }
-
-  if (entry.type === 'harness_edited') {
-    const isHelpers = entry.harnessTarget === 'helpers';
-    const verb = entry.harnessAction === 'patch' ? 'Patched' : 'Updated';
-    const addedCount = entry.added?.length ?? 0;
-    const removedCount = entry.removed?.length ?? 0;
-    const changedCount = entry.changed?.length ?? 0;
-    const diffParts: string[] = [];
-    if (addedCount) diffParts.push(`+${addedCount}`);
-    if (removedCount) diffParts.push(`-${removedCount}`);
-    if (changedCount) diffParts.push(`~${changedCount}`);
-    const diffSummary = diffParts.length ? ` (${diffParts.join(' ')})` : '';
-    const title = (entry.added ?? []).concat(entry.changed ?? []).concat((entry.removed ?? []).map((n) => `-${n}`)).join(', ');
-    return (
-      <div className="step step--harness" title={title || undefined}>
-        <span className="step__icon">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 2v10M11 2v10M3 4h8M3 10h8M5 7h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </span>
-        <span className="step__skill-label">{verb} harness</span>
-        <span className="step__skill-topic">{isHelpers ? 'helpers.js' : `AGENTS.md${diffSummary}`}</span>
-      </div>
-    );
-  }
-
-  if (entry.type === 'file_output') {
-    return <FileOutputRow entry={entry} />;
-  }
-
-  if (entry.type === 'notify') {
-    const isBlocking = entry.level === 'blocking';
-    return (
-      <div className={`step step--notify${isBlocking ? ' step--notify-blocking' : ' step--notify-info'}`}>
-        <span className="step__text">{entry.content}</span>
-      </div>
-    );
-  }
-
-  if (entry.type === 'user_input') {
-    return (
-      <div className="step step--user-input">
-        <span className="step__user-chevron">&rsaquo;</span>
-        <span className="step__user-text">{entry.content}</span>
-      </div>
-    );
-  }
-
-  if (entry.type === 'done') {
-    return null as unknown as React.ReactElement;
-  }
-
-  if (entry.type === 'error') {
-    return (
-      <div className="step step--error">
-        <span className="step__text">{entry.content}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="step step--output">
-      <div className="step__text">
-        <Markdown source={entry.content} />
-      </div>
-    </div>
-  );
-}
-
 function BrowserIcon(): React.ReactElement {
   return (
     <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -466,28 +326,11 @@ function BrowserIcon(): React.ReactElement {
   );
 }
 
-function OutputIcon(): React.ReactElement {
-  return (
-    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-      <path d="M3 4h8M3 7h6M3 10h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function SplitIcon(): React.ReactElement {
   return (
     <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
       <rect x="1.5" y="2" width="11" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
       <rect x="1.5" y="7.5" width="11" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
-}
-
-function CopyIcon(): React.ReactElement {
-  return (
-    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-      <rect x="4.5" y="4.5" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M9.5 4.5V3a1.5 1.5 0 00-1.5-1.5H3A1.5 1.5 0 001.5 3v5A1.5 1.5 0 003 9.5h1.5" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   );
 }

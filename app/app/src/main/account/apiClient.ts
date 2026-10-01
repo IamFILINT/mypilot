@@ -190,7 +190,7 @@ export class AccountApiClient {
 
   /** Revoke the current session. */
   logout(token: string): Promise<AccountApiResult<null>> {
-    return this.request('/v1/auth/session', { safeParse: (v) => ({ success: true, data: null as null }) }, {
+    return this.request('/v1/auth/session', { safeParse: () => ({ success: true, data: null as null }) }, {
       method: 'DELETE',
       token,
     });

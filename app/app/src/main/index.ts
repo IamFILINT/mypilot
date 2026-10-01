@@ -1905,7 +1905,7 @@ app.whenReady().then(async () => {
   // removed it without clearing entry.attached, leaving the renderer seeing a
   // phantom "Browser starting…" state), re-add it here so recovery is automatic.
   ipcMain.on('sessions:view-resize', (_event, id: string, bounds: { x: number; y: number; width: number; height: number }) => {
-    const validatedId = assertString(id, 'id', 100);
+    assertString(id, 'id', 100);
     if (!shellWindow) return;
     const view = browserPool.getView(id);
     if (!view) return;

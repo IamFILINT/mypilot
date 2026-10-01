@@ -410,7 +410,7 @@ export function captureEvent(
   }
 
   let appVersion = 'unknown';
-  let platform = process.platform;
+  const platform = process.platform;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { app } = require('electron');
