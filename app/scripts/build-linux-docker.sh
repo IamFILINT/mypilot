@@ -50,7 +50,7 @@ rm -rf \
   "$APP_DIR/out/make/rpm" \
   "$APP_DIR/out/make/appimage" \
   "$APP_DIR/out/make/latest-linux.yml"
-docker cp "$container_id:/workspace/app/out/make" "$tmp_dir/make"
+docker cp "$container_id:/workspace/app/app/out/make" "$tmp_dir/make"
 cp -R "$tmp_dir/make/." "$APP_DIR/out/make/"
 
 node "$APP_DIR/scripts/verify-linux-artifacts.mjs"

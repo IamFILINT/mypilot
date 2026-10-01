@@ -1,0 +1,48 @@
+# This file governs `docker build` for app/docker/linux.Dockerfile.
+#
+# It MUST live at the build context root, which is the repository root
+# (app/scripts/build-linux-docker.sh passes BUILD_CONTEXT=repo root so that
+# sidecar/ and browser-use/ are visible to the packaging step). Docker only
+# reads ./.dockerignore from the context root, so a copy under app/ is silently
+# ignored. Paths below are therefore relative to the repository root, and the
+# Electron app is app/app, not app/.
+
+.git
+.DS_Store
+.omc
+.omx
+.task
+.harness
+
+# node_modules is installed inside the container before `COPY . .`, so ignoring
+# it here both speeds up the build and stops a host install from overwriting the
+# container's own tree.
+node_modules
+**/node_modules
+app/app/node_modules
+
+app/app/out
+app/app/.vite
+app/app/dist
+app/app/test-results
+app/app/tests/results
+app/app/tests/debug
+app/app/tests/visual/captures
+app/app/tests/visual/diff
+
+# The Linux build stages the packaged app out of the container via
+# `docker cp`; a stale host copy must never shadow it.
+app/out
+
+*.log
+reagan_*
+app/app/reagan_*
+.track-*.md
+.track-*.txt
+
+.env
+.env.local
+.env.*.local
+app/.env
+app/app/.env
+app/app/.env.local

@@ -120,14 +120,14 @@ jobs:
 
       # uv provisions the relocatable CPython that ships as
       # resources/python-runtime. The prePackage hook runs
-      # scripts/build-python-runtime.mjs, which needs uv on PATH.
+      # app/app/scripts/build-python-runtime.mjs, which needs uv on PATH.
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
       - name: Install JS dependencies
-        working-directory: app
+        working-directory: app/app
         # Repo's source of truth is yarn.lock (Taskfile runs `yarn install`).
         # --frozen-lockfile keeps CI deps identical to dev.
         run: yarn install --frozen-lockfile
@@ -205,16 +205,33 @@ jobs:
           rm -f "$CERT_PATH"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
+      # The agent runtime is staged from the browser-use fork, which is not part
+      # of this repository. With no MYPILOT_BROWSER_USE_SRC override,
+      # stage-sidecar-resources.mjs resolves it as <product>/../browser-use -- a
+      # sibling of the checkout -- so clone it there. Wired in through a
+      # repository variable because the fork is private.
+      - name: Check out the browser-use fork
+        env:
+          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BROWSER_USE_FORK_URL}" ]; then
+            echo "::error::Repository variable BROWSER_USE_FORK_URL is not set. It must point at the browser-use fork used to build the MyPilot Agent runtime."
+            exit 1
+          fi
+          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
+          test -f "$(dirname "$GITHUB_WORKSPACE")/browser-use/pyproject.toml"
+
       - name: electron-forge make (unsigned)
         if: ${{ steps.signing.outputs.mode == 'unsigned' }}
-        working-directory: app
+        working-directory: app/app
         env:
           SKIP_SIGNING: '1'
         run: npm run make
 
       - name: electron-forge make (signed, no notarization)
         if: ${{ steps.signing.outputs.mode == 'signed' }}
-        working-directory: app
+        working-directory: app/app
         env:
           # Forge config notarizes only when APPLE_ID is set, so we
           # deliberately omit it here.
@@ -223,7 +240,7 @@ jobs:
 
       - name: electron-forge make (signed + notarized)
         if: ${{ steps.signing.outputs.mode == 'notarized' }}
-        working-directory: app
+        working-directory: app/app
         env:
           SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -238,9 +255,9 @@ jobs:
           set -euo pipefail
           tag="${{ needs.release-metadata.outputs.tag }}"
           tag_version="${tag#v}"
-          package_version="$(node -p "require('./app/package.json').version")"
+          package_version="$(node -p "require('./app/app/package.json').version")"
           if [[ "$tag_version" != "$package_version" ]]; then
-            echo "::error::Tag ${tag} does not match app/package.json version ${package_version}. electron-updater compares against the packaged app version, so publishing would not update users correctly."
+            echo "::error::Tag ${tag} does not match app/app/package.json version ${package_version}. electron-updater compares against the packaged app version, so publishing would not update users correctly."
             exit 1
           fi
           echo "Package version matches release tag: ${package_version}"
@@ -275,7 +292,7 @@ jobs:
               *)          stable="MyPilot.dmg" ;;
             esac
             cp "$f" "release-assets/${stable}"
-          done < <(find app/out/make -type f -name '*.dmg')
+          done < <(find app/app/out/make -type f -name '*.dmg')
 
           zip_count=0
           while IFS= read -r app; do
@@ -298,11 +315,11 @@ jobs:
             zip="release-assets/MyPilot-${arch}-mac.zip"
             ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
             zip_count=$((zip_count + 1))
-          done < <(find app/out -type d -name '*.app' -prune -print)
+          done < <(find app/app/out -type d -name '*.app' -prune -print)
 
           if [[ "$zip_count" -eq 0 ]]; then
             echo "::error::No .app bundle found under app/out — cannot create Squirrel.Mac update ZIP."
-            find app/out -maxdepth 4 -type d -print || true
+            find app/app/out -maxdepth 4 -type d -print || true
             exit 1
           fi
 
@@ -310,18 +327,18 @@ jobs:
             [[ -z "$f" ]] && continue
             cp "$f" release-assets/
             zip_count=$((zip_count + 1))
-          done < <(find app/out/make -type f -name '*.zip')
+          done < <(find app/app/out/make -type f -name '*.zip')
 
           if [[ "$dmg_count" -eq 0 ]]; then
             echo "::error::No DMG produced by electron-forge make — refusing to publish empty release."
-            ls -R app/out/make || true
+            ls -R app/app/out/make || true
             exit 1
           fi
 
           shopt -s nullglob
-          release_version="$(node -p "require('./app/package.json').version")"
+          release_version="$(node -p "require('./app/app/package.json').version")"
           release_date="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
-          node app/scripts/generate-mac-update-feed.mjs \
+          node app/app/scripts/generate-mac-update-feed.mjs \
             --version "$release_version" \
             --release-date "$release_date" \
             --output release-assets/latest-mac.yml \
@@ -447,21 +464,21 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: app/yarn.lock
+          cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git SSH to HTTPS
         shell: pwsh
         run: git config --global 'url.https://github.com/.insteadOf' 'ssh://git@github.com/'
 
       # uv provisions the relocatable CPython that ships as
-      # resources/python-runtime (scripts/build-python-runtime.mjs).
+      # resources/python-runtime (app/app/scripts/build-python-runtime.mjs).
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
       - name: Install JS dependencies
-        working-directory: app
+        working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: Validate package version for tag releases
@@ -470,15 +487,32 @@ jobs:
         run: |
           $tag = '${{ needs.release-metadata.outputs.tag }}'
           $tagVersion = $tag.TrimStart('v')
-          $packageVersion = node -p "require('./app/package.json').version"
+          $packageVersion = node -p "require('./app/app/package.json').version"
           if ($tagVersion -ne $packageVersion) {
-            Write-Error "Tag $tag does not match app/package.json version $packageVersion. Windows updates compare against the packaged app version, so publishing would not update users correctly."
+            Write-Error "Tag $tag does not match app/app/package.json version $packageVersion. Windows updates compare against the packaged app version, so publishing would not update users correctly."
             exit 1
           }
           "Package version matches release tag: $packageVersion"
 
+      # The agent runtime is staged from the browser-use fork, which is not part
+      # of this repository. With no MYPILOT_BROWSER_USE_SRC override,
+      # stage-sidecar-resources.mjs resolves it as <product>/../browser-use -- a
+      # sibling of the checkout -- so clone it there. Wired in through a
+      # repository variable because the fork is private.
+      - name: Check out the browser-use fork
+        env:
+          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BROWSER_USE_FORK_URL}" ]; then
+            echo "::error::Repository variable BROWSER_USE_FORK_URL is not set. It must point at the browser-use fork used to build the MyPilot Agent runtime."
+            exit 1
+          fi
+          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
+          test -f "$(dirname "$GITHUB_WORKSPACE")/browser-use/pyproject.toml"
+
       - name: electron-forge make (Windows Squirrel)
-        working-directory: app
+        working-directory: app/app
         env:
           WINDOWS_SIGN_WITH_PARAMS: ${{ secrets.WINDOWS_SIGN_WITH_PARAMS }}
         run: yarn run make -- --platform=win32 --arch=x64
@@ -487,7 +521,7 @@ jobs:
         shell: pwsh
         run: |
           $assetDir = 'release-assets-windows'
-          $sourceDir = 'app/out/make/squirrel.windows/x64'
+          $sourceDir = 'app/app/out/make/squirrel.windows/x64'
           New-Item -ItemType Directory -Force $assetDir | Out-Null
           if (-not (Test-Path $sourceDir)) {
             Write-Error "No Squirrel.Windows output found at $sourceDir"
@@ -613,8 +647,8 @@ jobs:
             echo "::error::Repository variable BROWSER_USE_FORK_URL is not set. It must point at the browser-use fork checkout used to build the MyPilot Agent runtime."
             exit 1
           fi
-          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
-          test -f "$(dirname "$GITHUB_WORKSPACE")/browser-use/pyproject.toml"
+          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$GITHUB_WORKSPACE/browser-use"
+          test -f "$GITHUB_WORKSPACE/browser-use/pyproject.toml"
 
       - name: Validate package version for tag releases
         if: startsWith(github.ref, 'refs/tags/')
@@ -623,15 +657,15 @@ jobs:
           set -euo pipefail
           tag="${{ needs.release-metadata.outputs.tag }}"
           tag_version="${tag#v}"
-          package_version="$(node -p "require('./app/package.json').version")"
+          package_version="$(node -p "require('./app/app/package.json').version")"
           if [[ "$tag_version" != "$package_version" ]]; then
-            echo "::error::Tag ${tag} does not match app/package.json version ${package_version}. Linux packages would report the wrong app version."
+            echo "::error::Tag ${tag} does not match app/app/package.json version ${package_version}. Linux packages would report the wrong app version."
             exit 1
           fi
           echo "Package version matches release tag: ${package_version}"
 
       - name: Build Linux .deb/.rpm/AppImage in Docker
-        run: bash scripts/build-linux-docker.sh
+        run: bash app/scripts/build-linux-docker.sh
 
       - name: Prepare Linux release assets
         shell: bash
@@ -654,7 +688,7 @@ jobs:
           cp "$(find linux-release-assets -maxdepth 1 -type f -name '*.AppImage' | head -n 1)" \
             linux-release-assets/MyPilot-x64.AppImage
 
-          node scripts/verify-linux-artifacts.mjs linux-release-assets
+          node app/scripts/verify-linux-artifacts.mjs linux-release-assets
           echo "Prepared Linux release assets:"
           ls -la linux-release-assets
 
