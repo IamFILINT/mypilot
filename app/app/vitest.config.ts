@@ -49,10 +49,13 @@ export default defineConfig({
       ],
       reporter: ['text', 'lcov', 'json-summary'],
       reportsDirectory: 'tests/results/coverage',
-      // Phase 1: report coverage but don't gate CI on it. New code should
-      // follow the D1 directive (>=80% on src/main + src/shared). Ratcheting
-      // global thresholds is Phase-2 work, tracked once we've backfilled tests
-      // for the Chromium-parity features that shipped without them.
+      // Enforce minimum coverage thresholds for CI.
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 50,
+        statements: 60,
+      },
     },
     reporters: ['verbose'],
   },

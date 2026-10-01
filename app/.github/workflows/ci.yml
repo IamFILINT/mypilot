@@ -171,3 +171,61 @@ jobs:
       - name: Run Linux-only spawn tests
         working-directory: app
         run: yarn vitest run tests/unit/hl/codexStdinLinux.test.ts
+
+  sidecar:
+    name: Python sidecar (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install sidecar dependencies
+        working-directory: sidecar
+        run: uv sync --frozen
+
+      - name: Run pytest
+        working-directory: sidecar
+        run: uv run pytest tests/ -v
+
+      - name: Run ruff
+        working-directory: sidecar
+        run: uv run ruff check src/ tests/
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: app/yarn.lock
+
+      - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
+        run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+
+      - name: Install dependencies
+        working-directory: app
+        run: yarn install --frozen-lockfile
+
+      - name: Install Playwright
+        working-directory: app
+        run: npx playwright install --with-deps chromium
+
+      - name: Build app
+        working-directory: app
+        run: yarn build
+
+      - name: Run E2E tests
+        working-directory: app
+        run: yarn e2e
