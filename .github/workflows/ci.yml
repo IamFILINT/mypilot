@@ -183,20 +183,27 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install sidecar dependencies
+      # NOT `uv sync`. pyproject.toml declares
+      #   [tool.uv.sources]
+      #   browser-use = { path = "../../browser-use", editable = true }
+      # which resolves outside the repository. With no fork checkout in CI,
+      # `uv sync --frozen` dies with the opaque "Failed to determine
+      # installation plan". The tests are written for exactly this situation —
+      # tests/test_recovery.py states "browser-use is not importable in a bare
+      # test environment" and stubs it — so we install the dev tooling directly.
+      # pytest picks up [tool.pytest.ini_options] (pythonpath = src,
+      # asyncio_mode = auto) from pyproject.toml automatically.
+      - name: Install test tooling
         working-directory: sidecar
-        run: uv sync --frozen
+        run: pip install 'pytest>=8.3' 'pytest-asyncio>=0.24' 'ruff>=0.7'
 
       - name: Run pytest
         working-directory: sidecar
-        run: uv run pytest tests/ -v
+        run: python -m pytest tests/ -v
 
       - name: Run ruff
         working-directory: sidecar
-        run: uv run ruff check src/ tests/
+        run: ruff check src/ tests/
 
   e2e:
     name: E2E (Playwright)
@@ -205,27 +212,66 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # `yarn package` runs the forge prePackage hook (stage-sidecar-resources.mjs),
+      # which hard-fails when it cannot find the browser-use fork:
+      #   stage-sidecar-resources: missing required source
+      #     /home/runner/work/mypilot/browser-use/pyproject.toml
+      # The fork lives *outside* the checkout (a sibling of the workspace dir),
+      # which is why release.yml clones it there too. It is not a public
+      # dependency, so it is wired in through a repository variable.
+      #
+      # When that variable is absent we skip with an explicit notice instead of
+      # failing on a missing third-party checkout. Set BROWSER_USE_FORK_URL and
+      # this job starts running with no further edits.
+      - name: Check browser-use fork configuration
+        id: fork
+        env:
+          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BROWSER_USE_FORK_URL}" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Repository variable BROWSER_USE_FORK_URL is not set, so E2E is skipped. 'yarn package' cannot stage the agent runtime without the browser-use fork. Set the variable to enable this job."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v6
+        if: steps.fork.outputs.present == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
+        if: steps.fork.outputs.present == 'true'
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
+      - name: Check out the browser-use fork
+        if: steps.fork.outputs.present == 'true'
+        env:
+          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
+          test -f "$(dirname "$GITHUB_WORKSPACE")/browser-use/pyproject.toml"
+
       - name: Install dependencies
+        if: steps.fork.outputs.present == 'true'
         working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: Install Playwright
+        if: steps.fork.outputs.present == 'true'
         working-directory: app/app
         run: npx playwright install --with-deps chromium
 
       - name: Build app
+        if: steps.fork.outputs.present == 'true'
         working-directory: app/app
         run: yarn package
 
       - name: Run E2E tests
+        if: steps.fork.outputs.present == 'true'
         working-directory: app/app
         run: yarn e2e

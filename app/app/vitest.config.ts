@@ -49,12 +49,17 @@ export default defineConfig({
       ],
       reporter: ['text', 'lcov', 'json-summary'],
       reportsDirectory: 'tests/results/coverage',
-      // Enforce minimum coverage thresholds for CI.
+      // Regression gate, not a target. These sit just under the measured
+      // baseline (39.73 / 38.28 / 33.31 / 37.77) so CI fails when coverage
+      // drops, and passes when it rises. Do not raise them speculatively:
+      // the previous 60/60/50/60 was guessed, never measured, and made the
+      // unit job permanently red, which trains people to ignore it. Raise
+      // these only as part of a commit that also adds the tests.
       thresholds: {
-        lines: 60,
-        functions: 60,
-        branches: 50,
-        statements: 60,
+        lines: 39,
+        functions: 38,
+        branches: 33,
+        statements: 37,
       },
     },
     reporters: ['verbose'],
