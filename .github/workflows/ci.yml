@@ -34,17 +34,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: app/yarn.lock
+          cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Install dependencies
-        working-directory: app
+        working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: ESLint
-        working-directory: app
+        working-directory: app/app
         run: yarn lint
 
   typecheck:
@@ -59,17 +59,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: app/yarn.lock
+          cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Install dependencies
-        working-directory: app
+        working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: tsc --noEmit
-        working-directory: app
+        working-directory: app/app
         run: yarn typecheck
 
   unit:
@@ -83,21 +83,21 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: app/yarn.lock
+          cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Install dependencies
-        working-directory: app
+        working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: Check SessionDb schema manifest
-        working-directory: app
+        working-directory: app/app
         run: yarn db:schema:check
 
       - name: Run vitest with coverage
-        working-directory: app
+        working-directory: app/app
         run: yarn test:coverage
 
       - name: Upload coverage (TS)
@@ -105,7 +105,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-ts
-          path: app/tests/results/coverage/
+          path: app/app/tests/results/coverage/
           if-no-files-found: warn
 
       - name: Upload test results
@@ -113,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: vitest-results
-          path: app/tests/results/
+          path: app/app/tests/results/
           if-no-files-found: ignore
 
   windows-spawn:
@@ -132,17 +132,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: app/yarn.lock
+          cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Install dependencies
-        working-directory: app
+        working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: Run Windows-only spawn tests
-        working-directory: app
+        working-directory: app/app
         run: yarn vitest run tests/unit/hl/codexStdinWindows.test.ts
 
   linux-spawn:
@@ -159,17 +159,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: app/yarn.lock
+          cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Install dependencies
-        working-directory: app
+        working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: Run Linux-only spawn tests
-        working-directory: app
+        working-directory: app/app
         run: yarn vitest run tests/unit/hl/codexStdinLinux.test.ts
 
   sidecar:
@@ -209,23 +209,23 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: app/yarn.lock
+          cache-dependency-path: app/app/yarn.lock
 
       - name: Rewrite git+ssh → https (transitive deps use ssh://git@github.com)
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Install dependencies
-        working-directory: app
+        working-directory: app/app
         run: yarn install --frozen-lockfile
 
       - name: Install Playwright
-        working-directory: app
+        working-directory: app/app
         run: npx playwright install --with-deps chromium
 
       - name: Build app
-        working-directory: app
-        run: yarn build
+        working-directory: app/app
+        run: yarn package
 
       - name: Run E2E tests
-        working-directory: app
+        working-directory: app/app
         run: yarn e2e
