@@ -18,7 +18,7 @@ vi.mock('electron', () => ({
 
 // Importing the preload runs exposeInMainWorld once (ESM caches the module),
 // so grab the exposed API here and reuse it across every test.
-await import('../../../src/preload/shell');
+await import('../../src/preload/shell');
 
 type ShellApi = {
   log: (level: string, ns: string, msg: string, extra?: Record<string, unknown>) => void;
