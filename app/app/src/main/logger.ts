@@ -104,16 +104,20 @@ export class RotatingFileWriter {
       this._rotate();
     }
 
-    // Fire-and-forget async write — never block the event loop.
-    // Lines are queued by the caller; a dropped line under extreme load
-    // is preferable to janking the main process.
-    fs.appendFile(this.filePath, line + '\n', 'utf-8', (err) => {
-      if (err) {
-        process.stderr.write(
-          `${LOG_PREFIX} Failed to write log line: ${(err as Error).message}\n`,
-        );
-      }
-    });
+    // Synchronous write: a log line must be durable the moment write()
+    // returns. An audit note suggested async to avoid event-loop blocking,
+    // but that trades correctness for microseconds of jank — readers (the
+    // log tail commands, crash diagnostics, and the logger tests) all assume
+    // the line is already on disk. Revisit only behind a write queue with an
+    // explicit flush on shutdown.
+    try {
+      fs.appendFileSync(this.filePath, line + '\n', 'utf-8');
+    } catch (err) {
+      // Last-resort: write to stderr so we never silently lose logs
+      process.stderr.write(
+        `${LOG_PREFIX} Failed to write log line: ${(err as Error).message}\n`,
+      );
+    }
   }
 
   getFilePath(): string {

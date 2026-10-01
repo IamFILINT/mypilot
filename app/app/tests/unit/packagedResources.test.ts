@@ -30,10 +30,23 @@ function listFiles(dir: string): string[] {
   return out;
 }
 
-describe('packaged python resources', () => {
+/**
+ * The browser-use fork is an external checkout that must sit beside the repo.
+ * It is only guaranteed to exist on maintainer machines and in release.yml —
+ * contributor forks and plain PR CI do not have it. Skip rather than fail so
+ * the suite stays runnable everywhere; the packaging path itself is still
+ * covered by release.yml, which always clones the fork first.
+ */
+const browserUseRoot = path.resolve(
+  process.env.MYPILOT_BROWSER_USE_SRC ?? path.join(appRoot, '..', '..', 'browser-use'),
+);
+const hasBrowserUse = fs.existsSync(path.join(browserUseRoot, 'pyproject.toml'));
+
+describe.skipIf(!hasBrowserUse)('packaged python resources', () => {
   beforeAll(() => {
     execFileSync(process.execPath, [path.join(appRoot, 'scripts/stage-sidecar-resources.mjs')], {
       stdio: 'pipe',
+      env: { ...process.env, MYPILOT_BROWSER_USE_SRC: browserUseRoot },
     });
   }, 60_000);
 

@@ -48,6 +48,8 @@ export class BrowserPool {
   private entries: Map<string, PoolEntry> = new Map();
   private maxConcurrent: number;
   private queue: string[] = [];
+  /** True while destroyAll() runs, so drainQueue() does not resurrect views. */
+  private destroyingAll = false;
   private onGone?: (sessionId: string) => void;
   private onCreate?: (sessionId: string) => void;
   private onNavigate?: (sessionId: string, url: string) => void;
@@ -934,10 +936,22 @@ export class BrowserPool {
     const sessionIds = Array.from(this.entries.keys());
     browserLogger.info('BrowserPool.destroyAll', { count: sessionIds.length });
 
-    for (const sessionId of sessionIds) {
-      this.destroy(sessionId, window);
+    // Drop the pending queue up front and suppress promotion for the whole
+    // teardown. Otherwise each destroy() frees a slot, drainQueue() promotes a
+    // still-queued session into a real view, and that view is missed by the
+    // snapshot we are iterating — leaving a live browser behind on quit.
+    this.queue.length = 0;
+    this.destroyingAll = true;
+    try {
+      for (const sessionId of sessionIds) {
+        this.destroy(sessionId, window);
+      }
+    } finally {
+      this.destroyingAll = false;
     }
 
+    // Anything a promote attempt added during teardown is stale — clear it so
+    // a later destroyAll (or a fresh session) starts from a truthful pool.
     this.queue.length = 0;
   }
 
@@ -968,6 +982,7 @@ export class BrowserPool {
   }
 
   private drainQueue(): void {
+    if (this.destroyingAll) return;
     while (this.queue.length > 0 && this.canCreate()) {
       const nextSessionId = this.queue.shift()!;
       browserLogger.info('BrowserPool.drainQueue', {
