@@ -1,4 +1,4 @@
-import type { AgentSession, HlEvent } from './types';
+import type { AgentSession } from './types';
 
 const NOW = Date.now();
 

@@ -329,7 +329,7 @@ export function OnboardingApp() {
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
-  const [saving, setSaving] = useState(false);
+const [, setSaving] = useState(false);
 
   // Per-provider API key fallback — expanded via the "Use X API key instead"
   // links beneath each provider's card cluster. Each feeds a separate keychain
@@ -340,7 +340,7 @@ export function OnboardingApp() {
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [openaiTesting, setOpenaiTesting] = useState(false);
   const [openaiTestResult, setOpenaiTestResult] = useState<{ success: boolean; error?: string } | null>(null);
-  const [openaiSaving, setOpenaiSaving] = useState(false);
+const [, setOpenaiSaving] = useState(false);
 
   const [claudeCode, setClaudeCode] = useState<{
     available: boolean;

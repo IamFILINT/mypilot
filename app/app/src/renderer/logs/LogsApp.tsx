@@ -166,10 +166,10 @@ export function LogsApp(): React.ReactElement {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [mode, setModeState] = useState<'dot' | 'normal' | 'full'>('normal');
   const [files, setFiles] = useState<FileOutputEntry[]>([]);
-  const [done, setDone] = useState<DoneInfo | null>(null);
+  const [, setDone] = useState<DoneInfo | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [sessionEngine, setSessionEngine] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [, setErrorMsg] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);

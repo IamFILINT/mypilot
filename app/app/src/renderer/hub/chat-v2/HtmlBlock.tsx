@@ -224,5 +224,5 @@ function wrap(content: string, theme: 'light' | 'dark'): string {
     th { font-weight: 600; color: ${tokens.thFg}; }
     hr { border: 0; border-top: 1px solid ${tokens.rule}; margin: 12px 0; }
     img { max-width: 100%; height: auto; }
-  </style></head><body>${content}</body></html>`;
+  </style></head><body>${sanitized}</body></html>`;
 }
