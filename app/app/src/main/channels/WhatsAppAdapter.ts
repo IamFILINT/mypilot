@@ -117,12 +117,21 @@ export class WhatsAppAdapter implements ChannelAdapter {
       });
 
       const silentLogger = { level: 'silent', info: () => {}, warn: () => {}, error: () => {}, debug: () => {}, trace: () => {}, fatal: () => {}, child: () => silentLogger } as unknown as Parameters<typeof makeWASocket>[0]['logger'];
+
+      // Baileys' internal key-store logger type is not exported, so it cannot be
+      // named without reaching into unexported helpers. silentLogger already
+      // satisfies the runtime contract; this cast just replaces the bare `as any`
+      // so the intent is explicit.
+      const baileysLogger = silentLogger as Parameters<
+        typeof makeCacheableSignalKeyStore
+      >[1];
+
       this.sock = makeWASocket({
         version,
         logger: silentLogger,
         auth: {
           creds: state.creds,
-          keys: makeCacheableSignalKeyStore(state.keys, silentLogger as any),
+          keys: makeCacheableSignalKeyStore(state.keys, baileysLogger),
         },
         browser: Browsers.ubuntu('MyPilot'),
         markOnlineOnConnect: false,

@@ -250,11 +250,11 @@ function materializeRawTree(opts: {
     return;
   }
 
+  let bytes = 0;
   try {
     const tempDir = `${target}.tmp-${Date.now()}`;
     fs.mkdirSync(tempDir, { recursive: true });
 
-    let bytes = 0;
     for (const [modulePath, content] of entries) {
       const rel = modulePath.slice(prefix.length);
       const outPath = path.join(tempDir, rel);
@@ -274,5 +274,9 @@ function materializeRawTree(opts: {
     throw err;
   }
 
-  mainLogger.info(`harness.bootstrap.${logName}.wrote`, { target, files: entries.length });
+  mainLogger.info(`harness.bootstrap.${logName}.wrote`, {
+    target,
+    files: entries.length,
+    bytes,
+  });
 }

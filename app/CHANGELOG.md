@@ -27,7 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed `engineSessionIds`/`sessionEngines` leak on session delete
 - Fixed non-atomic harness write (temp dir + rename)
 - Fixed `bootstrapHarness()` called before `app.whenReady()`
-- Fixed blocking `appendFileSync` in logger (now async)
+- Considered making logger writes async and reverted it: it broke 18 logger
+  tests and made log lines non-durable on exit. Sync `appendFileSync` is kept
+  deliberately so the log tail and crash diagnostics are never lost.
 - Fixed Windows process table (was always empty, now uses `wmic`)
 - Fixed `isPortFreeSync` returning `true` on error
 - Fixed `harnessOwnerFromCommand` only matching one path

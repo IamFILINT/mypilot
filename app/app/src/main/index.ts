@@ -98,13 +98,11 @@ import started from 'electron-squirrel-startup';
 import { createShellWindow } from './window';
 import { createTray, refreshTrayMenu } from './tray';
 // Track B — Pill + hotkeys
-import { createPillWindow, togglePill, showPill, hidePill, sendToPill, setPillHeight, PILL_HEIGHT_COLLAPSED, PILL_HEIGHT_EXPANDED } from './pill';
+import { createPillWindow, togglePill, hidePill, sendToPill, setPillHeight, forwardAgentEvent, PILL_HEIGHT_COLLAPSED, PILL_HEIGHT_EXPANDED } from './pill';
 import { createLogsWindow, attachToHub as attachLogsToHub, toggleLogs, hideLogs, getLogsWindow, showLogs, setLogsMode, updateLogsAnchor, focusLogsFollowUp } from './logsPill';
 import * as takeoverOverlay from './takeoverOverlay';
 import { sendSessionNotification } from './notifications';
 import { registerHotkeys, unregisterHotkeys, getGlobalCmdbarAccelerator, setGlobalCmdbarAccelerator } from './hotkeys';
-import { makeRequest, PROTOCOL_VERSION } from '../shared/types';
-import type { AgentEvent } from '../shared/types';
 import type { HlEvent } from '../shared/session-schemas';
 // Identity
 import { AccountStore } from './identity/AccountStore';
@@ -135,7 +133,6 @@ import { bootstrapHarness, harnessDir, skillIdToPath, skillMetaFromPath } from '
 import { runEngine, DEFAULT_ENGINE_ID } from './hl/engines';
 import type { EngineRunControl } from './hl/engines/types';
 import { getEngine, setEngine, type EngineId } from './hl/engine';
-import { forwardAgentEvent } from './pill';
 // Session management
 import { SessionManager } from './sessions/SessionManager';
 import { BrowserPool } from './sessions/BrowserPool';

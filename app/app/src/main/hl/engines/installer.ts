@@ -127,8 +127,15 @@ export function runInstallCommand(
     let stderr = '';
     let settled = false;
     let timedOut = false;
-    let timer: ReturnType<typeof setTimeout>;
     let forceKillTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try { child.kill('SIGTERM'); } catch { /* already closed */ }
+      forceKillTimer = setTimeout(() => {
+        try { child.kill('SIGKILL'); } catch { /* already closed */ }
+      }, 1000);
+    }, timeoutMs);
 
     const finish = (result: EngineInstallResult): void => {
       if (settled) return;
@@ -138,14 +145,6 @@ export function runInstallCommand(
       resetPathEnrichmentCache();
       resolve(result);
     };
-
-    timer = setTimeout(() => {
-      timedOut = true;
-      try { child.kill('SIGTERM'); } catch { /* already closed */ }
-      forceKillTimer = setTimeout(() => {
-        try { child.kill('SIGKILL'); } catch { /* already closed */ }
-      }, 1000);
-    }, timeoutMs);
 
     child.stdout?.on('data', (chunk) => {
       stdout = trimTail(stdout + String(chunk));
