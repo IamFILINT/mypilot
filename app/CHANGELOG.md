@@ -9,7 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 - Fixed path traversal in `sessions:download-output`
 - Fixed ANSI injection in `streamToTerm.ts`
-- Fixed XSS in `HtmlBlock.tsx` and `Markdown.tsx`
+- Fixed XSS in `Markdown.tsx`
+- Fixed XSS in `HtmlBlock.tsx`: `wrap()` computed a sanitized string but
+  interpolated the raw `content` into the iframe `srcDoc`, so the script-tag,
+  event-handler and `javascript:` replacements never affected what was rendered.
+  The earlier entry for this file was inaccurate — the sanitizer existed but was
+  not wired up. Now interpolated.
 - Tightened IPC validation on `sessions:view-resize`
 - Fixed TOCTOU race in `drainQueuedFollowUp`
 - Guarded `ANTHROPIC_API_KEY` env fallback to non-production
