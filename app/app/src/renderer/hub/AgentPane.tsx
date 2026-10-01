@@ -1,14 +1,11 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { STATUS_LABEL } from './constants';
-import { ContentRenderer } from './ContentRenderer';
-import { Markdown, linkifyOutputPaths } from './Markdown';
 import claudeCodeLogo from './claude-code-logo.svg';
 import openaiLogoDark from './openai-logo.svg';
 import openaiLogoLight from './openai-logo-light.svg';
 import opencodeLogoDark from './opencode-logo-dark.svg';
 import opencodeLogoLight from './opencode-logo-light.svg';
 import { useThemedAsset } from '../design/useThemedAsset';
-import { closeAppPopup, openAnchoredAppPopup } from '../shared/appPopup';
 import type { AgentSession, OutputEntry } from './types';
 
 function formatElapsed(createdAt: number): string {
@@ -47,71 +44,17 @@ function friendlyError(raw: string): string {
   return raw.length > 120 ? raw.slice(0, 120) + '...' : raw;
 }
 
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
-// Display dollar amounts: sub-cent uses 4 decimals so tiny runs stay visible
-// (e.g. $0.0023), single-dollar uses 3 decimals, larger rounds to cents.
 function formatCostUsd(usd: number): string {
   if (usd < 0.01) return `$${usd.toFixed(4)}`;
   if (usd < 1) return `$${usd.toFixed(3)}`;
   return `$${usd.toFixed(2)}`;
 }
 
-function BrowseIcon(): React.ReactElement {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <rect x="1.5" y="2.5" width="11" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M1.5 5.5h11" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
-}
 
-function CodeIcon(): React.ReactElement {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M5 4L2 7l3 3M9 4l3 3-3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
-function CameraIcon(): React.ReactElement {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <rect x="1.5" y="3.5" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="7" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
-}
 
-function NetworkIcon(): React.ReactElement {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M1.5 7h11M7 1.5c-2 2-2 5 0 5s2 3 0 5" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
-}
 
-function FileIcon(): React.ReactElement {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M8 1.5H4a1.5 1.5 0 00-1.5 1.5v8A1.5 1.5 0 004 12.5h6a1.5 1.5 0 001.5-1.5V5L8 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-      <path d="M8 1.5V5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
-function ToolGenericIcon(): React.ReactElement {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M7 1.5v2M7 10.5v2M1.5 7h2M10.5 7h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function ErrorIcon(): React.ReactElement {
   return (
@@ -122,198 +65,11 @@ function ErrorIcon(): React.ReactElement {
   );
 }
 
-const BROWSER_KEYWORDS = /goto|nav|tab|click|scroll|hover|select|wait|back|forward|refresh|browse|page/i;
-const CODE_KEYWORDS = /^js$|javascript|eval|exec|script|shell|bash|code|run_code/i;
-const SCREENSHOT_KEYWORDS = /screen|capture|snap|photo/i;
-const NETWORK_KEYWORDS = /http|fetch|request|api|curl|download|upload/i;
-const FILE_KEYWORDS = /file|read|write|search|find|glob|grep|dir|folder|path/i;
 
-function toolIcon(name?: string): React.ReactElement {
-  if (!name) return <ToolGenericIcon />;
-  if (CODE_KEYWORDS.test(name)) return <CodeIcon />;
-  if (SCREENSHOT_KEYWORDS.test(name)) return <CameraIcon />;
-  if (NETWORK_KEYWORDS.test(name)) return <NetworkIcon />;
-  if (BROWSER_KEYWORDS.test(name)) return <BrowseIcon />;
-  if (FILE_KEYWORDS.test(name)) return <FileIcon />;
-  return <ToolGenericIcon />;
-}
 
-function ToolStep({ entry }: { entry: OutputEntry }): React.ReactElement {
-  const [open, setOpen] = useState(false);
-  const toggle = () => setOpen((o) => !o);
 
-  const hasResult = !!entry.result;
-  const dur = entry.result?.duration;
 
-  return (
-    <div className={`step step--tool${hasResult ? '' : ' step--tool-active'}`}>
-      <div className="step__row" onClick={toggle} role="button" tabIndex={0} aria-expanded={open}>
-        <span className="step__icon">{toolIcon(entry.tool)}</span>
-        <span className="step__name">{entry.tool}</span>
-        {!hasResult && <span className="step__spinner" />}
-        <span className="step__fill" />
-        {dur != null && <span className="step__dur">{formatDuration(dur)}</span>}
-      </div>
-      {open && (
-        <div className="step__detail">
-          <ContentRenderer content={entry.content} type="tool_call" />
-          {hasResult && (
-            <>
-              <div className="step__divider" />
-              <ContentRenderer content={entry.result!.content} type="tool_result" />
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
-function ToolGroup({ entry }: { entry: OutputEntry }): React.ReactElement {
-  const [open, setOpen] = useState(false);
-  const toggle = () => setOpen((o) => !o);
-  const count = entry.groupCount ?? 0;
-  const children = entry.groupEntries ?? [];
-
-  return (
-    <div className="step step--tool-group">
-      <div className="step__row" onClick={toggle} role="button" tabIndex={0} aria-expanded={open}>
-        <span className="step__icon">{toolIcon(entry.tool)}</span>
-        <span className="step__name">{entry.tool}</span>
-        <span className="step__badge">{count}</span>
-        <span className="step__fill" />
-      </div>
-      {open && (
-        <div className="step__group-children">
-          {children.map((child) => (
-            <ToolStep key={child.id} entry={child} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Cached editor list — fetched once per renderer load.
-// Filter out editors we don't want to expose (Xcode etc.) defensively here so
-// the UI updates without waiting for a main-process restart to flush its cache.
-const EDITOR_BLOCKLIST = new Set(['xcode']);
-let editorsPromise: Promise<Array<{ id: string; name: string }>> | null = null;
-function getEditors(): Promise<Array<{ id: string; name: string }>> {
-  if (!editorsPromise) {
-    const base = window.electronAPI?.sessions?.listEditors?.() ?? Promise.resolve([]);
-    editorsPromise = base.then((list) => list.filter((e) => !EDITOR_BLOCKLIST.has(e.id)));
-  }
-  return editorsPromise;
-}
-
-function formatFileSize(n: number | undefined): string {
-  if (n == null) return '';
-  if (n < 1024) return `${n}B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
-  return `${(n / 1024 / 1024).toFixed(1)}MB`;
-}
-
-function FileOutputRow({ entry }: { entry: OutputEntry }): React.ReactElement {
-  const [editors, setEditors] = useState<Array<{ id: string; name: string }>>([]);
-  const [popupId, setPopupId] = useState<string | null>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => { getEditors().then(setEditors).catch(() => setEditors([])); }, []);
-
-  const onOpenInEditor = useCallback(async (editorId: string) => {
-    console.log('[file_output] onOpenInEditor click', { editorId, path: entry.tool });
-    if (!entry.tool) {
-      console.warn('[file_output] onOpenInEditor: entry.tool is falsy; aborting');
-      return;
-    }
-    const api = window.electronAPI?.sessions?.openInEditor;
-    if (!api) {
-      console.error('[file_output] window.electronAPI.sessions.openInEditor is undefined — preload bridge missing');
-      return;
-    }
-    try {
-      const res = await api(editorId, entry.tool);
-      console.log('[file_output] openInEditor success', res);
-    } catch (err) {
-      console.error('[file_output] openInEditor failed', err);
-      // Fallback so the user gets *some* response: reveal the file in Finder
-      // so they can open it manually.
-      try { await window.electronAPI?.sessions?.revealOutput?.(entry.tool); }
-      catch (revealErr) { console.error('[file_output] reveal fallback also failed', revealErr); }
-    }
-  }, [entry.tool]);
-
-  const onRevealInFinder = useCallback(async () => {
-    if (!entry.tool) return;
-    try { await window.electronAPI?.sessions?.revealOutput?.(entry.tool); }
-    catch (err) { console.error('[file_output] reveal failed', err); }
-  }, [entry.tool]);
-
-  const toggleMenu = useCallback(async () => {
-    const button = buttonRef.current;
-    if (!button) return;
-    if (popupId) {
-      closeAppPopup(popupId);
-      return;
-    }
-    const nextId = await openAnchoredAppPopup(
-      button,
-      {
-        kind: 'menu',
-        placement: 'top-end',
-        width: 220,
-        items: [
-          ...editors.map((editor) => ({
-            id: `editor:${editor.id}`,
-            label: `Open in ${editor.name}`,
-            icon: { type: 'editor' as const, id: editor.id },
-          })),
-          {
-            id: 'reveal',
-            label: 'Reveal in Finder',
-            icon: { type: 'finder' as const },
-            separatorBefore: editors.length > 0,
-          },
-        ],
-      },
-      {
-        onAction: (action) => {
-          if (action.kind !== 'menu-select') return;
-          if (action.itemId.startsWith('editor:')) void onOpenInEditor(action.itemId.slice('editor:'.length));
-          if (action.itemId === 'reveal') void onRevealInFinder();
-        },
-        onClosed: () => setPopupId(null),
-      },
-    );
-    if (nextId) setPopupId(nextId);
-  }, [editors, onOpenInEditor, onRevealInFinder, popupId]);
-
-  return (
-    <div className="step step--file-output">
-      <span className="step__icon">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M8 1.5H4a1.5 1.5 0 00-1.5 1.5v8A1.5 1.5 0 004 12.5h6a1.5 1.5 0 001.5-1.5V5L8 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-          <path d="M8 1.5V5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-        </svg>
-      </span>
-      <span className="step__skill-label">Produced file</span>
-      <span className="step__skill-topic" title={entry.tool}>{entry.content}</span>
-      <span className="step__file-size">{formatFileSize(entry.fileSize)}</span>
-      <div className="step__file-ide">
-        <button
-          ref={buttonRef}
-          className="step__file-download step__file-ide-toggle"
-          onClick={(e) => { e.stopPropagation(); void toggleMenu(); }}
-          aria-haspopup="menu"
-          aria-expanded={Boolean(popupId)}
-        >
-          Open in {'\u25BE'}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function BrowserIcon(): React.ReactElement {
   return (
@@ -361,166 +117,8 @@ function PauseIcon(): React.ReactElement {
   );
 }
 
-interface FollowUpAttachment { idx: number; name: string; mime: string; bytes: Uint8Array }
 
-async function fileToAttachment(file: File, idx: number): Promise<FollowUpAttachment> {
-  const buf = await file.arrayBuffer();
-  return {
-    idx,
-    name: file.name || `image-${idx}`,
-    mime: file.type || 'application/octet-stream',
-    bytes: new Uint8Array(buf),
-  };
-}
 
-function insertAtCaret(el: HTMLTextAreaElement, text: string): string {
-  const start = el.selectionStart ?? el.value.length;
-  const end = el.selectionEnd ?? el.value.length;
-  const before = el.value.slice(0, start);
-  const after = el.value.slice(end);
-  const next = before + text + after;
-  // Defer caret move to next tick once React re-renders with the new value.
-  queueMicrotask(() => {
-    el.selectionStart = el.selectionEnd = start + text.length;
-  });
-  return next;
-}
-
-function FollowUpInput({ sessionId, onUserInput, autoFocus }: { sessionId: string; onUserInput: (text: string, attachments?: FollowUpAttachment[]) => void; autoFocus?: boolean }): React.ReactElement {
-  const [value, setValue] = useState('');
-  const [attachments, setAttachments] = useState<FollowUpAttachment[]>([]);
-  const [dragOver, setDragOver] = useState(false);
-  const idxCounter = useRef(0);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (autoFocus && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [autoFocus]);
-
-  const handleSubmit = useCallback(() => {
-    const trimmed = value.trim();
-    // Only include attachments whose `[Image #N]` token still appears in the
-    // text — deleting the token from the input removes the attachment.
-    const presentIdx = new Set<number>();
-    const tokenRe = /\[Image #(\d+)\]/g;
-    let m: RegExpExecArray | null;
-    while ((m = tokenRe.exec(trimmed)) !== null) presentIdx.add(Number(m[1]));
-    const filtered = attachments.filter((a) => presentIdx.has(a.idx));
-    if (!trimmed && filtered.length === 0) return;
-    console.log('[FollowUpInput] sending follow-up', { id: sessionId, promptLength: trimmed.length, attachmentCount: filtered.length });
-    onUserInput(trimmed, filtered.length > 0 ? filtered : undefined);
-    setValue('');
-    setAttachments([]);
-    idxCounter.current = 0;
-  }, [value, sessionId, onUserInput, attachments]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      textareaRef.current?.blur();
-    } else if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  }, [handleSubmit]);
-
-  const addFiles = useCallback(async (files: FileList | File[] | null) => {
-    if (!files) return;
-    const list = Array.from(files);
-    if (list.length === 0) return;
-    const el = textareaRef.current;
-    const startIdx = idxCounter.current + 1;
-    idxCounter.current += list.length;
-    try {
-      const next = await Promise.all(list.map((f, i) => fileToAttachment(f, startIdx + i)));
-      setAttachments((prev) => [...prev, ...next]);
-      const tokens = next.map((a) => `[Image #${a.idx}]`).join(' ');
-      if (el) {
-        setValue((prev) => {
-          const pos = el.selectionStart ?? prev.length;
-          const before = prev.slice(0, pos);
-          const after = prev.slice(el.selectionEnd ?? prev.length);
-          const sep = before && !before.endsWith(' ') ? ' ' : '';
-          const inserted = sep + tokens + (after && !after.startsWith(' ') ? ' ' : '');
-          queueMicrotask(() => {
-            const newPos = before.length + inserted.length;
-            el.selectionStart = el.selectionEnd = newPos;
-            el.focus();
-          });
-          return before + inserted + after;
-        });
-      } else {
-        setValue((prev) => (prev ? prev + ' ' : '') + tokens);
-      }
-    } catch (err) {
-      console.error('[FollowUpInput] attach failed', err);
-    }
-  }, []);
-
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    const files = e.clipboardData?.files;
-    if (files && files.length > 0) {
-      e.preventDefault();
-      void addFiles(files);
-    }
-  }, [addFiles]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    void addFiles(e.dataTransfer?.files ?? null);
-  }, [addFiles]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [value]);
-
-  // Suppress unused warning for insertAtCaret if lint is strict; referenced for future direct-caret paths.
-  void insertAtCaret;
-
-  return (
-    <div
-      className={`followup${dragOver ? ' followup--dragover' : ''}`}
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={handleDrop}
-    >
-      <div className="followup__row">
-        <span className="followup__chevron">&rsaquo;</span>
-        <textarea
-          ref={textareaRef}
-          className="followup__input"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
-          placeholder="Follow up..."
-          rows={1}
-        />
-        <button
-          type="button"
-          className="followup__attach-btn"
-          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-          aria-label="Attach files"
-          title="Attach files"
-        >+</button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          style={{ display: 'none' }}
-          onChange={(e) => { void addFiles(e.target.files); e.target.value = ''; }}
-        />
-      </div>
-    </div>
-  );
-}
 
 function CloseIcon(): React.ReactElement {
   return (
