@@ -25,13 +25,19 @@ type SettingsOpenPayload = {
 
 let sessionCounter = MOCK_SESSIONS.length + 1;
 
+const EMPTY_SESSIONS: AgentSession[] = [];
+const NOOP = (): void => {};
+
 export function HubApp(): React.ReactElement {
   const isMock = import.meta.env.VITE_MOCK_MODE === '1';
   const [mockSessions, setMockSessions] = useState<AgentSession[]>(isMock ? MOCK_SESSIONS : []);
   const sessionsQuery = useSessionsQuery();
   const updateSession = useUpdateSession();
-  const sessions = isMock ? mockSessions : (sessionsQuery.data ?? []);
-  const setSessions = isMock ? setMockSessions : () => {};
+  // Hoisted so both stay referentially stable across renders. Inline `[]` and
+  // `() => {}` allocate new identities every render, which silently defeats the
+  // memoisation of the six hooks that depend on them further down.
+  const sessions = isMock ? mockSessions : (sessionsQuery.data ?? EMPTY_SESSIONS);
+  const setSessions = isMock ? setMockSessions : NOOP;
 
   // Mirror sessions into Zustand for the chat view + future fine-grained
   // subscribers. Uses the same per-event `session-output` IPC stream that the
@@ -243,12 +249,6 @@ export function HubApp(): React.ReactElement {
     return kb?.keys[0] ? vim.formatShortcut(kb.keys[0]) : '';
   };
 
-  const tip = (label: string, actionId: ActionId): string => {
-    const key = shortcutFor(actionId);
-    return key ? `${label}  (${key})` : label;
-  };
-
-
   useEffect(() => {
     const unsub = window.electronAPI?.on?.openSettings?.((payload) => {
       openSettingsPage(payload);
@@ -396,7 +396,6 @@ export function HubApp(): React.ReactElement {
       console.error('[HubApp] createSession failed', err);
     }
   }, [isMock, setViewMode, enterChat]);
-
 
   const handleFollowUp = useCallback(async (
     sessionId: string,

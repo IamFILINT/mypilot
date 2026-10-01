@@ -87,7 +87,7 @@ export function Markdown({
           return defaultUrlTransform(url);
         }}
         components={{
-          a: ({ node, href, children, ...props }) => {
+          a: ({ node: _node, href, children, ...props }) => {
             if (typeof href === 'string' && href.startsWith(OUTPUT_PATH_SCHEME)) {
               const relPath = href.slice(OUTPUT_PATH_SCHEME.length);
               const onClick = (e: React.MouseEvent) => {
