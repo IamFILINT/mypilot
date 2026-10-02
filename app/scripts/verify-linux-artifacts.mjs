@@ -3,8 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const makeDir = path.resolve(process.argv[2] ?? path.join(repoRoot, 'app', 'out', 'make'));
+// This script lives at <workspace>/scripts/, so one level up is already the
+// workspace dir (repo/app) -- not the repository root. Joining another 'app'
+// onto it resolved to app/app/out/make, which nothing ever writes to.
+const workspaceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// build-linux-docker.sh stages its `docker cp` output at <workspace>/out/make,
+// so that is the default to verify. release.yml passes an explicit dir instead.
+const makeDir = path.resolve(process.argv[2] ?? path.join(workspaceDir, 'out', 'make'));
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];
