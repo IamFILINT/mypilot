@@ -45,7 +45,7 @@ for (const artifact of [...debs, ...rpms, ...appImages, ...updateFeeds]) {
     console.error(`[linux-artifacts] Empty artifact: ${artifact}`);
     process.exit(1);
   }
-  console.log(`[linux-artifacts] ${path.relative(repoRoot, artifact)} (${formatSize(stat.size)})`);
+  console.log(`[linux-artifacts] ${path.relative(workspaceDir, artifact)} (${formatSize(stat.size)})`);
 }
 
 const updateFeed = updateFeeds[0];
