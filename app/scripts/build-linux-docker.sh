@@ -53,4 +53,4 @@ rm -rf \
 docker cp "$container_id:/workspace/app/app/out/make" "$tmp_dir/make"
 cp -R "$tmp_dir/make/." "$APP_DIR/out/make/"
 
-node "$APP_DIR/scripts/verify-linux-artifacts.mjs"
+node "$APP_DIR/scripts/verify-linux-artifacts.mjs" "$APP_DIR/out/make"

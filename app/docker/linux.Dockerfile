@@ -60,7 +60,11 @@ WORKDIR /workspace/app/app
 RUN yarn run make -- --platform=linux --arch=x64
 RUN test -f "/workspace/app/app/out/MyPilot-linux-x64/resources/app-update.yml"
 # Build tooling (AppImage wrapper, artifact verifier) lives in the workspace
-# scripts dir; the update-feed generator ships with the app itself.
+# scripts dir; the update-feed generator ships with the app itself. The
+# verifier is given its directory explicitly: forge wrote the packages under
+# the Electron project dir (/workspace/app/app/out), while the same script is
+# invoked on the host against the staging dir build-linux-docker.sh creates,
+# so no single relative default is correct for both.
 RUN node /workspace/app/scripts/build-linux-appimage.mjs \
     --package-dir "/workspace/app/app/out/MyPilot-linux-x64" \
     --output-dir /workspace/app/app/out/make/appimage/x64 \
@@ -69,4 +73,4 @@ RUN node /workspace/app/scripts/build-linux-appimage.mjs \
     --release-date "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
     --output /workspace/app/app/out/make/latest-linux.yml \
     /workspace/app/app/out/make/appimage/x64/*.AppImage
-RUN node /workspace/app/scripts/verify-linux-artifacts.mjs
+RUN node /workspace/app/scripts/verify-linux-artifacts.mjs /workspace/app/app/out/make
