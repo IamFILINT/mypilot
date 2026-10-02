@@ -63,7 +63,23 @@ and model catalogue cleanup, and translations. See
 
 ## Building from source
 
-Requires Node 20 or 22, and `yarn`.
+Requires **Node 20 or 22** and **yarn 1.x (classic)**.
+
+> **Use yarn classic, not yarn 2+ / Berry.** The lockfile in this repo is
+> yarn v1 format. Berry (yarn 4, which modern Node resolves via corepack) uses
+> Plug'n'Play and cannot read it. If you have a newer yarn, either install
+> classic with `npm i -g yarn@1.22.22`, or pin it per-project.
+
+> **Pin the Node version.** `.nvmrc` and `.node-version` at the repo root
+> request Node 22. Without that, a newer Node fails the `engines` check
+> (`20.x || 22.x`) on `yarn install`.
+
+Two errors that mean you skipped one of the above:
+
+| Message | Cause | Fix |
+|---|---|---|
+| `The engine "node" is incompatible with this module` | Node 24+ | `nvm use` (picks up `.nvmrc`) |
+| `.pnp.cjs` errors, or yarn can't parse `yarn.lock` | yarn 4 / Berry | `npm i -g yarn@1.22.22` |
 
 ```bash
 git clone https://github.com/IamFILINT/mypilot.git
