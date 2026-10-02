@@ -33,6 +33,7 @@
     "dev": "electron-forge start",
     "dev:settings": "SETTINGS_STANDALONE=1 electron-forge start",
     "package": "electron-forge package",
+    "rebuild:electron": "electron-rebuild -f -v 41.2.1",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint .",

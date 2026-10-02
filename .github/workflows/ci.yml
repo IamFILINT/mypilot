@@ -281,7 +281,34 @@ jobs:
         working-directory: app/app
         run: yarn package
 
+      # Invariant: every native .node loaded by Electron during E2E must target
+      # Electron's ABI (145 for Electron 41), not system Node's (127 for Node
+      # 22). `yarn install` builds better-sqlite3 for Node, and forge's
+      # packageAfterPrune rebuild only touches the packaged copy under out/, so
+      # the source node_modules stays Node-ABI. The E2E specs omit
+      # executablePath on purpose and so resolve node_modules/electron, loading
+      # .vite/build/main.js straight from this tree -- hence the rebuild here,
+      # after install and before the suite runs. Reuses @electron/rebuild, which
+      # is already a dependency. Scoped to this job only: rebuilding in place
+      # would break vitest, which needs the Node-ABI build.
+      - name: Rebuild native modules for Electron
+        if: steps.fork.outputs.present == 'true'
+        working-directory: app/app
+        run: yarn rebuild:electron
+
+      # Electron needs a display and GitHub's runner is headless. xvfb is part
+      # of the runner image; installed only if absent so this stays honest if
+      # the image changes.
+      - name: Ensure Xvfb is available
+        if: steps.fork.outputs.present == 'true'
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
+          fi
+
       - name: Run E2E tests
         if: steps.fork.outputs.present == 'true'
         working-directory: app/app
-        run: yarn e2e
+        run: xvfb-run --auto-servernum yarn e2e
