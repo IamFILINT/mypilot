@@ -205,21 +205,21 @@ jobs:
           rm -f "$CERT_PATH"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
-      # The agent runtime is staged from the browser-use fork, which is not part
-      # of this repository. With no MYPILOT_BROWSER_USE_SRC override,
+      # The agent runtime is staged from the browser-use source tree, which is not
+      # part of this repository. With no MYPILOT_BROWSER_USE_SRC override,
       # stage-sidecar-resources.mjs resolves it as <product>/../browser-use -- a
       # sibling of the checkout -- so clone it there. Wired in through a
-      # repository variable because the fork is private.
+      # repository variable so the source can change without editing workflows.
       - name: Check out the browser-use fork
         env:
-          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+          BROWSER_USE_URL: ${{ vars.BROWSER_USE_URL }}
         run: |
           set -euo pipefail
-          if [ -z "${BROWSER_USE_FORK_URL}" ]; then
-            echo "::error::Repository variable BROWSER_USE_FORK_URL is not set. It must point at the browser-use fork used to build the MyPilot Agent runtime."
+          if [ -z "${BROWSER_USE_URL}" ]; then
+            echo "::error::Repository variable BROWSER_USE_URL is not set. It must point at the browser-use fork used to build the MyPilot Agent runtime."
             exit 1
           fi
-          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
+          git clone --depth 1 "${BROWSER_USE_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
           test -f "$(dirname "$GITHUB_WORKSPACE")/browser-use/pyproject.toml"
 
       - name: electron-forge make (unsigned)
@@ -494,21 +494,21 @@ jobs:
           }
           "Package version matches release tag: $packageVersion"
 
-      # The agent runtime is staged from the browser-use fork, which is not part
-      # of this repository. With no MYPILOT_BROWSER_USE_SRC override,
+      # The agent runtime is staged from the browser-use source tree, which is not
+      # part of this repository. With no MYPILOT_BROWSER_USE_SRC override,
       # stage-sidecar-resources.mjs resolves it as <product>/../browser-use -- a
       # sibling of the checkout -- so clone it there. Wired in through a
-      # repository variable because the fork is private.
+      # repository variable so the source can change without editing workflows.
       - name: Check out the browser-use fork
         env:
-          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+          BROWSER_USE_URL: ${{ vars.BROWSER_USE_URL }}
         run: |
           set -euo pipefail
-          if [ -z "${BROWSER_USE_FORK_URL}" ]; then
-            echo "::error::Repository variable BROWSER_USE_FORK_URL is not set. It must point at the browser-use fork used to build the MyPilot Agent runtime."
+          if [ -z "${BROWSER_USE_URL}" ]; then
+            echo "::error::Repository variable BROWSER_USE_URL is not set. It must point at the browser-use fork used to build the MyPilot Agent runtime."
             exit 1
           fi
-          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
+          git clone --depth 1 "${BROWSER_USE_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
           test -f "$(dirname "$GITHUB_WORKSPACE")/browser-use/pyproject.toml"
 
       - name: electron-forge make (Windows Squirrel)
@@ -640,14 +640,14 @@ jobs:
       # build-linux-docker.sh preflights that it is present.
       - name: Check out the browser-use fork
         env:
-          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+          BROWSER_USE_URL: ${{ vars.BROWSER_USE_URL }}
         run: |
           set -euo pipefail
-          if [ -z "${BROWSER_USE_FORK_URL}" ]; then
-            echo "::error::Repository variable BROWSER_USE_FORK_URL is not set. It must point at the browser-use fork checkout used to build the MyPilot Agent runtime."
+          if [ -z "${BROWSER_USE_URL}" ]; then
+            echo "::error::Repository variable BROWSER_USE_URL is not set. It must point at the browser-use fork checkout used to build the MyPilot Agent runtime."
             exit 1
           fi
-          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$GITHUB_WORKSPACE/browser-use"
+          git clone --depth 1 "${BROWSER_USE_URL}" "$GITHUB_WORKSPACE/browser-use"
           test -f "$GITHUB_WORKSPACE/browser-use/pyproject.toml"
 
       - name: Validate package version for tag releases

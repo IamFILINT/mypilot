@@ -220,18 +220,24 @@ jobs:
       # why release.yml clones it there too, and it is wired in through a
       # repository variable rather than vendored.
       #
+      # BROWSER_USE_URL currently points at UPSTREAM browser-use/browser-use.
+      # There is no fork -- none has ever existed under the IamFILINT account.
+      # The .gitignore note describing ../browser-use as "upstream browser-use
+      # + our patch set" is aspirational; the local checkout is pristine
+      # upstream with no local commits.
+      #
       # When that variable is absent we skip with an explicit notice instead of
-      # failing on a missing third-party checkout. Set BROWSER_USE_FORK_URL and
+      # failing on a missing third-party checkout. Set BROWSER_USE_URL and
       # this job starts running with no further edits.
       - name: Check browser-use fork configuration
         id: fork
         env:
-          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+          BROWSER_USE_URL: ${{ vars.BROWSER_USE_URL }}
         run: |
           set -euo pipefail
-          if [ -z "${BROWSER_USE_FORK_URL}" ]; then
+          if [ -z "${BROWSER_USE_URL}" ]; then
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Repository variable BROWSER_USE_FORK_URL is not set, so E2E is skipped. 'yarn package' cannot stage the agent runtime without the browser-use fork. Set the variable to enable this job."
+            echo "::notice::Repository variable BROWSER_USE_URL is not set, so E2E is skipped. 'yarn package' cannot stage the agent runtime without the browser-use fork. Set the variable to enable this job."
           else
             echo "present=true" >> "$GITHUB_OUTPUT"
           fi
@@ -250,10 +256,10 @@ jobs:
       - name: Check out the browser-use fork
         if: steps.fork.outputs.present == 'true'
         env:
-          BROWSER_USE_FORK_URL: ${{ vars.BROWSER_USE_FORK_URL }}
+          BROWSER_USE_URL: ${{ vars.BROWSER_USE_URL }}
         run: |
           set -euo pipefail
-          git clone --depth 1 "${BROWSER_USE_FORK_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
+          git clone --depth 1 "${BROWSER_USE_URL}" "$(dirname "$GITHUB_WORKSPACE")/browser-use"
           test -f "$(dirname "$GITHUB_WORKSPACE")/browser-use/pyproject.toml"
 
       - name: Install dependencies
