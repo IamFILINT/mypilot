@@ -216,9 +216,9 @@ jobs:
       # which hard-fails when it cannot find the browser-use fork:
       #   stage-sidecar-resources: missing required source
       #     /home/runner/work/mypilot/browser-use/pyproject.toml
-      # The fork lives *outside* the checkout (a sibling of the workspace dir),
-      # which is why release.yml clones it there too. It is not a public
-      # dependency, so it is wired in through a repository variable.
+      # It lives *outside* the checkout (a sibling of the workspace dir), which is
+      # why release.yml clones it there too, and it is wired in through a
+      # repository variable rather than vendored.
       #
       # When that variable is absent we skip with an explicit notice instead of
       # failing on a missing third-party checkout. Set BROWSER_USE_FORK_URL and

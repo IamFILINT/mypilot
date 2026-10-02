@@ -443,20 +443,6 @@ const [, setOpenaiSaving] = useState(false);
     return () => { cancelled = true; };
   }, [waitingForCodexLogin, refreshCodexStatus]);
 
-  const handleUseCodex = useCallback(async () => {
-    if (!codex?.installed) return;
-    console.log('[onboarding] handleUseCodex: invoking useCodex');
-    try {
-      const res = await window.onboardingAPI.useCodex();
-      console.log('[onboarding] handleUseCodex: ok', res);
-      setUsingCodex(true);
-      setUsingClaudeCode(false);
-      window.onboardingAPI.capture?.('onboarding_provider_selected', { provider: 'codex' });
-    } catch (err) {
-      console.error('[onboarding] handleUseCodex: useCodex threw', err);
-    }
-  }, [codex?.installed]);
-
   const handleStartCodexLogin = useCallback(async (opts?: { deviceAuth?: boolean }) => {
     if (!codex?.installed) return;
     console.log('[onboarding] handleStartCodexLogin: invoking openCodexLoginTerminal', opts);
@@ -511,19 +497,6 @@ const [, setOpenaiSaving] = useState(false);
     const id = setTimeout(tick, 3000);
     return () => { cancelled = true; clearTimeout(id); };
   }, [waitingForLogin, refreshClaudeStatus]);
-
-  const handleUseClaudeCode = useCallback(async () => {
-    console.log('[onboarding] handleUseClaudeCode: invoking useClaudeCode');
-    try {
-      await window.onboardingAPI.useClaudeCode();
-      console.log('[onboarding] handleUseClaudeCode: ok');
-      setUsingClaudeCode(true);
-      setUsingCodex(false);
-      window.onboardingAPI.capture?.('onboarding_provider_selected', { provider: 'claude-code' });
-    } catch (err) {
-      console.error('[onboarding] handleUseClaudeCode: threw', err);
-    }
-  }, []);
 
   const handleStartClaudeLogin = useCallback(async () => {
     setWaitingForLogin(true);
@@ -625,7 +598,9 @@ const [, setOpenaiSaving] = useState(false);
   const [accelerator, setAccelerator] = useState<string>(() => defaultGlobalCmdbarAccelerator(window.onboardingAPI.platform));
   const [recording, setRecording] = useState(false);
   const [shortcutError, setShortcutError] = useState<string | null>(null);
-  const [shortcutActivated, setShortcutActivated] = useState(false);
+  // shortcutActivated is written but never read; the setter still matters, so the
+  // state stays and only the unused binding is dropped.
+  const [, setShortcutActivated] = useState(false);
   const [pillOpen, setPillOpen] = useState(false);
   const [platform, setPlatform] = useState(() => normalizeShortcutPlatform(window.onboardingAPI.platform));
   const suppressRecordingClickUntilRef = useRef(0);
@@ -688,19 +663,6 @@ const [, setOpenaiSaving] = useState(false);
     return () => clearTimeout(t);
   }, [testResult]);
 
-  const handleSaveKeyAndContinue = useCallback(async () => {
-    if (!apiKey.trim()) return;
-    setSaving(true);
-    try {
-      await window.onboardingAPI.saveApiKey(apiKey.trim());
-      setStep('notifications');
-    } catch (err) {
-      console.error('[onboarding] save key failed', err);
-    } finally {
-      setSaving(false);
-    }
-  }, [apiKey]);
-
   const handleTestOpenaiKey = useCallback(async () => {
     if (!openaiKey.trim()) return;
     console.log('[onboarding] handleTestOpenaiKey: invoking testOpenAIKey');
@@ -723,21 +685,6 @@ const [, setOpenaiSaving] = useState(false);
     const t = setTimeout(() => setOpenaiTestResult(null), 3500);
     return () => clearTimeout(t);
   }, [openaiTestResult]);
-
-  const handleSaveOpenaiKeyAndContinue = useCallback(async () => {
-    if (!openaiKey.trim()) return;
-    console.log('[onboarding] handleSaveOpenaiKeyAndContinue: saving');
-    setOpenaiSaving(true);
-    try {
-      await window.onboardingAPI.saveOpenAIKey(openaiKey.trim());
-      console.log('[onboarding] handleSaveOpenaiKeyAndContinue: saved, advancing');
-      setStep('notifications');
-    } catch (err) {
-      console.error('[onboarding] save openai key failed', err);
-    } finally {
-      setOpenaiSaving(false);
-    }
-  }, [openaiKey]);
 
   // Single bottom-of-step handler — saves whatever keys are filled and
   // advances. Works alongside the provider-subscription path (usingX), which
@@ -1361,7 +1308,6 @@ const [, setOpenaiSaving] = useState(false);
             </button>
           </div>
         )}
-
 
         {step === 'shortcut' && pillOpen && (
           <div className="step-panel pill-takeover">
