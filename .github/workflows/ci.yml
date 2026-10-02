@@ -266,6 +266,16 @@ jobs:
         working-directory: app/app
         run: npx playwright install --with-deps chromium
 
+      # Required before `yarn package`. The forge prePackage hook runs
+      # app/app/scripts/build-python-runtime.mjs, which needs uv on PATH to
+      # provision the relocatable CPython that ships as
+      # resources/python-runtime. release.yml installs uv in both its mac and
+      # Windows packaging jobs for exactly this reason; the E2E job was
+      # missing it, so packaging died with a bare exit code 1.
+      - name: Install uv
+        if: steps.fork.outputs.present == 'true'
+        uses: astral-sh/setup-uv@v6
+
       - name: Build app
         if: steps.fork.outputs.present == 'true'
         working-directory: app/app
